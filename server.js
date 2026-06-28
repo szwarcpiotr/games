@@ -266,6 +266,7 @@ function createCheckersRoom(id) {
     board:        initCheckersBoard(),
     turn:         1,       // 1 lub 2
     phase:        'waiting',
+    mustContinue: null,    // {row, col} jeśli ten pionek musi dobić
     restartVotes: new Set(),
   };
 }
@@ -352,6 +353,7 @@ function doCheckersRestart(room) {
   room.board        = initCheckersBoard();
   room.turn         = 1;
   room.phase        = 'playing';
+  room.mustContinue = null;
   room.restartVotes.clear();
   io.to(room.id).emit('restart',       { boardState: room.board, turn: room.turn });
   io.to(room.id).emit('restart_votes', { count: 0 });
@@ -384,6 +386,13 @@ warcabyNS.on('connection', (socket) => {
   socket.on('move', (move) => {
     if (room.phase !== 'playing' || playerNum !== room.turn) return;
 
+    // Jeśli trwa wymuszone dobicie, można ruszyć TYLKO tym pionkiem
+    if (room.mustContinue &&
+        (move.from.row !== room.mustContinue.row || move.from.col !== room.mustContinue.col)) {
+      socket.emit('invalid_move');
+      return;
+    }
+
     // Weryfikacja — czy ruch jest w liście legalnych
     const allMoves   = getAllMoves(room.board, room.turn);
     const hasCapture = allMoves.some(m => m.captures.length > 0);
@@ -395,22 +404,44 @@ warcabyNS.on('connection', (socket) => {
 
     if (legal.length === 0) { socket.emit('invalid_move'); return; }
 
+    const movedPlayer = room.turn;
     room.board = applyMove(room.board, legal[0]);
-    room.turn  = room.turn === 1 ? 2 : 1;
+
+    // ── Wielokrotne bicie: jeśli ten sam pionek może bić dalej, tura NIE przechodzi ──
+    let mustContinue = null;
+    if (legal[0].captures.length > 0) {
+      const landedPiece = room.board[legal[0].to.row][legal[0].to.col];
+      const furtherCaptures = getMovesForPiece(
+        legal[0].to.row, legal[0].to.col, room.board, movedPlayer, landedPiece.king
+      ).filter(m => m.captures.length > 0);
+      if (furtherCaptures.length > 0) {
+        mustContinue = { row: legal[0].to.row, col: legal[0].to.col };
+      }
+    }
+
+    room.turn         = mustContinue ? movedPlayer : (movedPlayer === 1 ? 2 : 1);
+    room.mustContinue = mustContinue;
 
     const winner = checkWinner(room.board);
     if (winner) {
       room.phase = 'over';
       warcabyNS.to(room.id).emit('game_over', { winner });
     } else {
-      // Sprawdź czy gracz ma jakiekolwiek ruchy
-      const nextMoves = getAllMoves(room.board, room.turn);
-      if (nextMoves.length === 0) {
-        room.phase = 'over';
-        warcabyNS.to(room.id).emit('game_over', { winner: room.turn === 1 ? 2 : 1 });
-        return;
+      if (!mustContinue) {
+        // Sprawdź czy gracz ma jakiekolwiek ruchy
+        const nextMoves = getAllMoves(room.board, room.turn);
+        if (nextMoves.length === 0) {
+          room.phase = 'over';
+          warcabyNS.to(room.id).emit('game_over', { winner: room.turn === 1 ? 2 : 1 });
+          return;
+        }
       }
-      warcabyNS.to(room.id).emit('state', { boardState: room.board, turn: room.turn, phase: room.phase });
+      warcabyNS.to(room.id).emit('state', {
+        boardState: room.board,
+        turn: room.turn,
+        phase: room.phase,
+        mustContinue,
+      });
     }
   });
 

@@ -287,6 +287,7 @@ let validMoves  = [];     // [{from, to, captures}] dla zaznaczonego
 let myPlayer    = 0;
 let currentTurn = 1;      // czyja tura wg serwera
 let gamePhase   = 'waiting';
+let forcedContinue = null; // {row, col} jeśli musimy dobić tym pionkiem
 
 function createEmptyBoard() {
   const b = [];
@@ -327,17 +328,25 @@ socket.on('start', ({ boardState, turn }) => {
   gamePhase = 'playing';
   selected = null;
   validMoves = [];
+  forcedContinue = null;
   document.getElementById('overlay').classList.add('hidden');
   updateTurnText();
   render();
 });
 
-socket.on('state', ({ boardState, turn, phase }) => {
+socket.on('state', ({ boardState, turn, phase, mustContinue }) => {
   board = boardState;
   currentTurn = turn;
   gamePhase = phase;
-  selected = null;
-  validMoves = [];
+  if (mustContinue && myPlayer === turn) {
+    selected   = { row: mustContinue.row, col: mustContinue.col };
+    validMoves = getValidMovesFor(mustContinue.row, mustContinue.col, board, myPlayer);
+    forcedContinue = { row: mustContinue.row, col: mustContinue.col };
+  } else {
+    selected   = null;
+    validMoves = [];
+    forcedContinue = null;
+  }
   updateTurnText();
   render();
 });
@@ -361,6 +370,7 @@ socket.on('restart_votes', ({ count }) => {
   const el = document.getElementById('restart-status');
   if (myPlayer === 0) return;
   el.textContent = `restart: R  ${count}/2`;
+  el.style.color = myRestartVote ? '#4fc3f7' : '#666';
 });
 
 socket.on('restart', ({ boardState, turn }) => {
@@ -369,6 +379,7 @@ socket.on('restart', ({ boardState, turn }) => {
   gamePhase = 'playing';
   selected = null;
   validMoves = [];
+  forcedContinue = null;
   myRestartVote = false;
   document.getElementById('overlay').classList.add('hidden');
   document.getElementById('restart-status').textContent = 'restart: R  0/2';
@@ -422,13 +433,17 @@ canvas.addEventListener('click', e => {
   // Czy kliknięto własny pionek?
   const piece = board[row][col];
   if (piece && piece.player === myPlayer) {
+    if (forcedContinue && (row !== forcedContinue.row || col !== forcedContinue.col)) {
+      return; // musisz dobić tym samym pionkiem
+    }
     selected   = { row, col };
     validMoves = getValidMovesFor(row, col, board, myPlayer);
     render();
     return;
   }
 
-  // Klik w pustkę — odznacz
+  // Klik w pustkę — odznacz (ale nie podczas wymuszonej kontynuacji bicia)
+  if (forcedContinue) return;
   selected   = null;
   validMoves = [];
   render();
@@ -542,7 +557,7 @@ function drawPiece(row, col, piece, s) {
   const r  = CELL * 0.38;
   const isP1 = piece.player === 1;
   const baseColor = isP1 ? s.p1piece : s.p2piece;
-  const kingColor = isP1 ? s.p1king  : s.p2king;
+  const kingColor = isP1 ? s.p2piece : s.p1piece; // kolor PRZECIWNIKA dla symbolu damki
 
   // Cień
   ctx.fillStyle = 'rgba(0,0,0,0.35)';
