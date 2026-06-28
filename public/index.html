@@ -138,7 +138,7 @@ socket.on('assigned', ({ player, roomId }) => {
     statusEl.textContent = 'Sterowanie: mysz';
   } else if (player === 2) {
     overlayMsg.textContent = 'Jesteś Graczem 2 (czerwony). Czekanie na przeciwnika…';
-    statusEl.textContent = 'Sterowanie: WSAD lub strzałki';
+    statusEl.textContent = 'Sterowanie: mysz';
   } else {
     overlayMsg.textContent = 'Oglądasz jako widz.';
     statusEl.textContent = 'Tryb widza';
@@ -150,7 +150,7 @@ socket.on('lobby', ({ players, spectators }) => {
     overlayMsg.textContent = `Gracze: ${players}/2 — czekanie…`;
   }
   if (spectators > 0 && players >= 2) {
-    statusEl.textContent = (myPlayer === 1 ? 'Sterowanie: mysz' : myPlayer === 2 ? 'Sterowanie: WSAD' : 'Tryb widza')
+    statusEl.textContent = (myPlayer === 1 ? 'Sterowanie: mysz' : myPlayer === 2 ? 'Sterowanie: mysz' : 'Tryb widza')
       + `  |  Widzowie: ${spectators}`;
   }
 });
@@ -219,15 +219,9 @@ function sendInput() {
     prevMPos = { ...mousePos };
     socket.emit('input', { dx, dy });
   } else if (myPlayer === 2) {
-    let dx = 0, dy = 0;
-    if (keys['arrowleft']  || keys['a']) dx -= 1;
-    if (keys['arrowright'] || keys['d']) dx += 1;
-    if (keys['arrowup']    || keys['w']) dy -= 1;
-    if (keys['arrowdown']  || keys['s']) dy += 1;
-    if (dx !== 0 || dy !== 0) {
-      const len = Math.sqrt(dx*dx + dy*dy);
-      dx = dx/len * 9; dy = dy/len * 9;
-    }
+    const dx = mousePos.x - prevMPos.x;
+    const dy = mousePos.y - prevMPos.y;
+    prevMPos = { ...mousePos };
     socket.emit('input', { dx, dy });
   }
 }
