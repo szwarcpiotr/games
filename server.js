@@ -301,7 +301,7 @@ function getMovesForPiece(row, col, board, player, isKing) {
   const moves = [];
   const dirs  = isKing
     ? [[-1,-1],[-1,1],[1,-1],[1,1]]
-    : player === 1 ? [[1,-1],[1,1]] : [[-1,-1],[-1,1]];
+    : player === 1 ? [[-1,-1],[-1,1]] : [[1,-1],[1,1]];
 
   for (const [dr, dc] of dirs) {
     const nr = row + dr, nc = col + dc;
@@ -325,8 +325,8 @@ function applyMove(board, move) {
   b[move.from.row][move.from.col] = null;
   for (const cap of move.captures) b[cap.row][cap.col] = null;
   // Damka
-  if (piece.player === 1 && move.to.row === 7) piece.king = true;
-  if (piece.player === 2 && move.to.row === 0) piece.king = true;
+  if (piece.player === 1 && move.to.row === 0) piece.king = true;
+  if (piece.player === 2 && move.to.row === 7) piece.king = true;
   return b;
 }
 

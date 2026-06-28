@@ -464,8 +464,8 @@ function getMovesForPiece(row, col, b, player, isKing) {
   const dirs = isKing
     ? [[-1,-1],[-1,1],[1,-1],[1,1]]
     : player === 1
-      ? [[1,-1],[1,1]]
-      : [[-1,-1],[-1,1]];
+      ? [[-1,-1],[-1,1]]
+      : [[1,-1],[1,1]];
 
   for (const [dr, dc] of dirs) {
     const nr = row + dr, nc = col + dc;
