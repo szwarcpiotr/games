@@ -99,6 +99,15 @@
     </div>
   </a>
 
+  <a class="card" href="/warcaby">
+    <canvas class="card-preview" id="preview-warcaby"></canvas>
+    <div class="card-info">
+      <div class="card-title">Warcaby</div>
+      <div class="card-desc">Angielskie checkers dla 2 graczy</div>
+      <span class="card-badge">2 graczy • online</span>
+    </div>
+  </a>
+
   <!-- Placeholder na przyszłe gry -->
   <div class="card" style="opacity:0.3;pointer-events:none;">
     <canvas class="card-preview" style="background:#0d1a14"></canvas>
@@ -176,6 +185,44 @@
   drawMallet(88 * sx, H/2, '#4fc3f7');
   drawMallet((900 - 88) * sx, H/2, '#ef5350');
   drawPuck(W/2, H/2);
+})();
+
+// ── Miniaturka warcabów ────────────────────────────────────────────────────────
+(function() {
+  const canvas = document.getElementById('preview-warcaby');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width  = canvas.offsetWidth  * dpr;
+  canvas.height = canvas.offsetHeight * dpr;
+  ctx.scale(dpr, dpr);
+  const W = canvas.offsetWidth, H = canvas.offsetHeight;
+  const CELL = W / 8;
+
+  const light = '#0d2a1f', dark = '#071510';
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      ctx.fillStyle = (r + c) % 2 === 1 ? dark : light;
+      ctx.fillRect(c*CELL, r*CELL, CELL, CELL);
+    }
+  }
+
+  // Pionki startowe
+  const pr = CELL * 0.36;
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      if ((r + c) % 2 !== 1) continue;
+      let color = null;
+      if (r < 3) color = '#ef5350';
+      if (r > 4) color = '#4fc3f7';
+      if (!color) continue;
+      const x = c*CELL + CELL/2, y = r*CELL + CELL/2;
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.beginPath(); ctx.arc(x+2, y+2, pr, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.arc(x, y, pr, 0, Math.PI*2); ctx.fill();
+    }
+  }
 })();
 </script>
 </body>

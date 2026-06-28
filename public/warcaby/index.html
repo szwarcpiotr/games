@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>Warcaby</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Courier New', monospace;
+    user-select: none;
+    transition: background 0.3s;
+  }
+
+  /* ── Skórka: neon (domyślna) ── */
+  body.skin-neon {
+    background: #0a0a0f;
+    color: #e0e0e0;
+  }
+  body.skin-neon #board-wrap {
+    box-shadow: 0 0 40px rgba(79,195,247,0.15);
+  }
+  body.skin-neon .turn-indicator {
+    color: #4fc3f7;
+  }
+
+  /* ── Skórka: classic ── */
+  body.skin-classic {
+    background: #f0ebe0;
+    color: #1a1a1a;
+  }
+  body.skin-classic #board-wrap {
+    box-shadow: 0 4px 24px rgba(0,0,0,0.25);
+  }
+  body.skin-classic .turn-indicator {
+    color: #333;
+  }
+  body.skin-classic #home-btn {
+    background: rgba(0,0,0,0.08);
+    border-color: #ccc;
+    color: #555;
+  }
+  body.skin-classic #home-btn:hover {
+    background: rgba(0,0,0,0.15);
+    color: #111;
+  }
+  body.skin-classic #settings-btn {
+    background: rgba(0,0,0,0.08);
+    border-color: #ccc;
+    color: #555;
+  }
+  body.skin-classic #settings-btn:hover { background: rgba(0,0,0,0.15); color: #111; }
+  body.skin-classic #settings-panel {
+    background: #fff;
+    border-color: #ccc;
+    color: #222;
+  }
+  body.skin-classic .skin-option {
+    border-color: #ccc;
+    background: #f5f0e8;
+    color: #333;
+  }
+  body.skin-classic .skin-option:hover { border-color: #888; }
+  body.skin-classic .skin-option.active { border-color: #333; background: #e0d8c8; }
+  body.skin-classic #overlay {
+    background: rgba(240,235,224,0.92);
+    color: #222;
+  }
+  body.skin-classic #overlay h1 { color: #333; }
+  body.skin-classic #overlay p { color: #666; }
+  body.skin-classic #status-bar { color: #555; }
+
+  /* ── Przyciski nawigacji ── */
+  #home-btn, #settings-btn {
+    position: fixed;
+    top: 16px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid #333;
+    color: #aaa;
+    font-size: 18px;
+    width: 40px; height: 40px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s, color 0.2s;
+    z-index: 30;
+  }
+  #home-btn { left: 16px; }
+  #settings-btn { right: 16px; }
+  #home-btn:hover, #settings-btn:hover {
+    background: rgba(255,255,255,0.18); color: #fff;
+  }
+
+  /* ── Panel ustawień ── */
+  #settings-panel {
+    position: fixed;
+    top: 64px; right: 16px;
+    background: #111820;
+    border: 1px solid #2a3a4a;
+    border-radius: 12px;
+    padding: 16px;
+    width: 200px;
+    z-index: 40;
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+  }
+  #settings-panel.open { display: flex; }
+  #settings-panel h3 {
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: #4fc3f7;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  body.skin-classic #settings-panel h3 { color: #555; }
+
+  .skin-option {
+    padding: 10px 12px;
+    border: 1px solid #2a3a4a;
+    border-radius: 8px;
+    cursor: pointer;
+    background: #0d1520;
+    color: #aaa;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    letter-spacing: 1px;
+    transition: border-color 0.15s, background 0.15s;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .skin-option:hover { border-color: #4fc3f7; color: #fff; }
+  .skin-option.active { border-color: #4fc3f7; background: rgba(79,195,247,0.1); color: #4fc3f7; }
+  .skin-preview {
+    width: 24px; height: 24px; border-radius: 4px; flex-shrink: 0;
+  }
+
+  /* ── Overlay ── */
+  #overlay {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.85);
+    gap: 16px; z-index: 20;
+  }
+  #overlay h1 { font-size: 42px; letter-spacing: 6px; color: #4fc3f7; }
+  #overlay p  { color: #aaa; font-size: 14px; }
+  #overlay.hidden { display: none; }
+
+  /* ── Info bar ── */
+  #info-bar {
+    display: flex;
+    gap: 40px;
+    margin-bottom: 12px;
+    align-items: center;
+    min-height: 28px;
+  }
+  .turn-indicator {
+    font-size: 14px;
+    letter-spacing: 2px;
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+  #status-bar {
+    font-size: 12px;
+    color: #556;
+    letter-spacing: 1px;
+    margin-top: 10px;
+    min-height: 18px;
+  }
+
+  #board-wrap {
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  canvas { display: block; cursor: pointer; }
+</style>
+</head>
+<body class="skin-neon">
+
+<button id="home-btn" title="Menu główne">⌂</button>
+<button id="settings-btn" title="Ustawienia">⚙</button>
+
+<div id="settings-panel">
+  <h3>Styl planszy</h3>
+  <div class="skin-option active" data-skin="neon">
+    <canvas class="skin-preview" id="prev-neon"></canvas>
+    Neon
+  </div>
+  <div class="skin-option" data-skin="classic">
+    <canvas class="skin-preview" id="prev-classic"></canvas>
+    Klasyczny
+  </div>
+</div>
+
+<div id="overlay">
+  <h1>WARCABY</h1>
+  <p id="overlay-msg">Łączenie z serwerem…</p>
+</div>
+
+<div id="info-bar">
+  <span class="turn-indicator" id="turn-text">Czekanie…</span>
+</div>
+
+<div id="board-wrap">
+  <canvas id="board"></canvas>
+</div>
+
+<div id="status-bar" id="status-bar">
+  <span id="status"></span>
+  <span id="restart-status"></span>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+// ══════════════════════════════════════════════════════════════════════════════
+// STAŁE
+// ══════════════════════════════════════════════════════════════════════════════
+const BOARD_SIZE  = 8;
+const CELL        = 72;          // px per cell
+const CANVAS_SIZE = BOARD_SIZE * CELL;
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CANVAS
+// ══════════════════════════════════════════════════════════════════════════════
+const canvas = document.getElementById('board');
+const ctx    = canvas.getContext('2d');
+canvas.width  = CANVAS_SIZE;
+canvas.height = CANVAS_SIZE;
+
+// Skalowanie na małe ekrany
+function resize() {
+  const maxSize = Math.min(window.innerWidth - 48, window.innerHeight - 160, 600);
+  const scale   = maxSize / CANVAS_SIZE;
+  canvas.style.width  = (CANVAS_SIZE * scale) + 'px';
+  canvas.style.height = (CANVAS_SIZE * scale) + 'px';
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SKÓRKI
+// ══════════════════════════════════════════════════════════════════════════════
+const SKINS = {
+  neon: {
+    lightCell:  '#0d2a1f',
+    darkCell:   '#071510',
+    p1piece:    '#4fc3f7',   // niebieski
+    p2piece:    '#ef5350',   // czerwony
+    p1king:     '#b3e5fc',
+    p2king:     '#ffcdd2',
+    highlight:  'rgba(79,195,247,0.35)',
+    moveHint:   'rgba(79,195,247,0.55)',
+    border:     '#1a3a2a',
+    gridLine:   '#0a1f16',
+  },
+  classic: {
+    lightCell:  '#f0d9b5',
+    darkCell:   '#b58863',
+    p1piece:    '#111',      // czarny
+    p2piece:    '#eee',      // biały
+    p1king:     '#333',
+    p2king:     '#fff',
+    highlight:  'rgba(255,255,0,0.35)',
+    moveHint:   'rgba(255,255,0,0.6)',
+    border:     '#8a6040',
+    gridLine:   '#8a6040',
+  },
+};
+
+let currentSkin = 'neon';
+function skin() { return SKINS[currentSkin]; }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// LOGIKA WARCABÓW (po stronie klienta — tylko do wyświetlania, stan z serwera)
+// ══════════════════════════════════════════════════════════════════════════════
+// Pionek: { player: 1|2, king: bool } lub null
+let board       = createEmptyBoard();
+let selected    = null;   // {row, col} zaznaczony pionek
+let validMoves  = [];     // [{from, to, captures}] dla zaznaczonego
+let myPlayer    = 0;
+let currentTurn = 1;      // czyja tura wg serwera
+let gamePhase   = 'waiting';
+
+function createEmptyBoard() {
+  const b = [];
+  for (let r = 0; r < 8; r++) {
+    b.push(new Array(8).fill(null));
+  }
+  return b;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SOCKET.IO
+// ══════════════════════════════════════════════════════════════════════════════
+const socket = io('/warcaby', { transports: ['websocket', 'polling'] });
+
+socket.on('connect', () => {
+  document.getElementById('overlay-msg').textContent = 'Połączono. Czekanie na drugiego gracza…';
+});
+
+socket.on('assigned', ({ player }) => {
+  myPlayer = player;
+  const names = ['Widz', 'Gracz 1 (czarny)', 'Gracz 2 (biały)'];
+  document.getElementById('status').textContent =
+    player === 0 ? 'Tryb widza' : `Jesteś: ${names[player]}`;
+  if (player !== 0) {
+    document.getElementById('restart-status').textContent = 'restart: R  0/2';
+  }
+});
+
+socket.on('lobby', ({ players }) => {
+  if (players < 2) {
+    document.getElementById('overlay-msg').textContent = `Gracze: ${players}/2 — czekanie…`;
+  }
+});
+
+socket.on('start', ({ boardState, turn }) => {
+  board = boardState;
+  currentTurn = turn;
+  gamePhase = 'playing';
+  selected = null;
+  validMoves = [];
+  document.getElementById('overlay').classList.add('hidden');
+  updateTurnText();
+  render();
+});
+
+socket.on('state', ({ boardState, turn, phase }) => {
+  board = boardState;
+  currentTurn = turn;
+  gamePhase = phase;
+  selected = null;
+  validMoves = [];
+  updateTurnText();
+  render();
+});
+
+socket.on('invalid_move', () => {
+  selected = null;
+  validMoves = [];
+  render();
+});
+
+socket.on('game_over', ({ winner }) => {
+  const overlay = document.getElementById('overlay');
+  overlay.classList.remove('hidden');
+  const msg = winner === myPlayer ? '🏆 Wygrałeś!' :
+              winner === 0        ? 'Remis!'        : 'Przegrałeś!';
+  document.getElementById('overlay-msg').textContent = msg;
+  document.getElementById('turn-text').textContent = '';
+});
+
+socket.on('restart_votes', ({ count }) => {
+  const el = document.getElementById('restart-status');
+  if (myPlayer === 0) return;
+  el.textContent = `restart: R  ${count}/2`;
+});
+
+socket.on('restart', ({ boardState, turn }) => {
+  board = boardState;
+  currentTurn = turn;
+  gamePhase = 'playing';
+  selected = null;
+  validMoves = [];
+  myRestartVote = false;
+  document.getElementById('overlay').classList.add('hidden');
+  document.getElementById('restart-status').textContent = 'restart: R  0/2';
+  updateTurnText();
+  render();
+});
+
+socket.on('player_left', ({ player }) => {
+  document.getElementById('overlay').classList.remove('hidden');
+  document.getElementById('overlay-msg').textContent = `Gracz ${player} wyszedł. Czekanie…`;
+});
+
+socket.on('disconnect', () => {
+  document.getElementById('overlay').classList.remove('hidden');
+  document.getElementById('overlay-msg').textContent = 'Rozłączono. Odśwież stronę.';
+});
+
+function updateTurnText() {
+  const el = document.getElementById('turn-text');
+  if (gamePhase !== 'playing') { el.textContent = ''; return; }
+  if (myPlayer === 0) {
+    el.textContent = currentTurn === 1 ? 'Tura: Gracz 1' : 'Tura: Gracz 2';
+  } else {
+    el.textContent = currentTurn === myPlayer ? 'Twoja tura' : 'Tura przeciwnika';
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// INPUT — klik na planszę
+// ══════════════════════════════════════════════════════════════════════════════
+canvas.addEventListener('click', e => {
+  if (gamePhase !== 'playing' || myPlayer === 0 || currentTurn !== myPlayer) return;
+
+  const rect  = canvas.getBoundingClientRect();
+  const scale = CANVAS_SIZE / rect.width;
+  const px    = (e.clientX - rect.left) * scale;
+  const py    = (e.clientY - rect.top)  * scale;
+  const col   = Math.floor(px / CELL);
+  const row   = Math.floor(py / CELL);
+
+  // Czy kliknięto pole docelowe ruchu?
+  const move = validMoves.find(m => m.to.row === row && m.to.col === col);
+  if (move) {
+    socket.emit('move', move);
+    selected   = null;
+    validMoves = [];
+    render();
+    return;
+  }
+
+  // Czy kliknięto własny pionek?
+  const piece = board[row][col];
+  if (piece && piece.player === myPlayer) {
+    selected   = { row, col };
+    validMoves = getValidMovesFor(row, col, board, myPlayer);
+    render();
+    return;
+  }
+
+  // Klik w pustkę — odznacz
+  selected   = null;
+  validMoves = [];
+  render();
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// LOGIKA RUCHÓW (klient — do podpowiedzi, serwer weryfikuje)
+// ══════════════════════════════════════════════════════════════════════════════
+function getValidMovesFor(row, col, b, player) {
+  const allMoves    = getAllMoves(b, player);
+  const hasCapture  = allMoves.some(m => m.captures.length > 0);
+  return allMoves.filter(m =>
+    m.from.row === row && m.from.col === col &&
+    (!hasCapture || m.captures.length > 0)
+  );
+}
+
+function getAllMoves(b, player) {
+  const moves = [];
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const p = b[r][c];
+      if (!p || p.player !== player) continue;
+      moves.push(...getMovesForPiece(r, c, b, player, p.king));
+    }
+  }
+  return moves;
+}
+
+function getMovesForPiece(row, col, b, player, isKing) {
+  const moves = [];
+  // Kierunki: gracz 1 idzie w dół (rosnący row), gracz 2 w górę
+  const dirs = isKing
+    ? [[-1,-1],[-1,1],[1,-1],[1,1]]
+    : player === 1
+      ? [[1,-1],[1,1]]
+      : [[-1,-1],[-1,1]];
+
+  for (const [dr, dc] of dirs) {
+    const nr = row + dr, nc = col + dc;
+    if (!inBounds(nr, nc)) continue;
+    if (!b[nr][nc]) {
+      moves.push({ from: {row, col}, to: {row: nr, col: nc}, captures: [] });
+    } else if (b[nr][nc].player !== player) {
+      // Bicie
+      const jr = nr + dr, jc = nc + dc;
+      if (inBounds(jr, jc) && !b[jr][jc]) {
+        moves.push({ from: {row, col}, to: {row: jr, col: jc}, captures: [{row: nr, col: nc}] });
+      }
+    }
+  }
+  return moves;
+}
+
+function inBounds(r, c) { return r >= 0 && r < 8 && c >= 0 && c < 8; }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// RENDERING
+// ══════════════════════════════════════════════════════════════════════════════
+function render() {
+  const s = skin();
+  ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+
+  // Pola
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const isDark = (r + c) % 2 === 1;
+      ctx.fillStyle = isDark ? s.darkCell : s.lightCell;
+      ctx.fillRect(c * CELL, r * CELL, CELL, CELL);
+    }
+  }
+
+  // Podświetlenie zaznaczonego
+  if (selected) {
+    ctx.fillStyle = s.highlight;
+    ctx.fillRect(selected.col * CELL, selected.row * CELL, CELL, CELL);
+  }
+
+  // Podpowiedzi ruchów
+  for (const m of validMoves) {
+    const { row, col } = m.to;
+    ctx.fillStyle = s.moveHint;
+    ctx.beginPath();
+    ctx.arc(col * CELL + CELL/2, row * CELL + CELL/2, CELL * 0.2, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  // Linie siatki
+  ctx.strokeStyle = s.gridLine;
+  ctx.lineWidth   = 1;
+  for (let i = 0; i <= 8; i++) {
+    ctx.beginPath();
+    ctx.moveTo(i * CELL, 0); ctx.lineTo(i * CELL, CANVAS_SIZE); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, i * CELL); ctx.lineTo(CANVAS_SIZE, i * CELL); ctx.stroke();
+  }
+
+  // Pionki
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const p = board[r][c];
+      if (!p) continue;
+      drawPiece(r, c, p, s);
+    }
+  }
+}
+
+function drawPiece(row, col, piece, s) {
+  const x  = col * CELL + CELL / 2;
+  const y  = row * CELL + CELL / 2;
+  const r  = CELL * 0.38;
+  const isP1 = piece.player === 1;
+  const baseColor = isP1 ? s.p1piece : s.p2piece;
+  const kingColor = isP1 ? s.p1king  : s.p2king;
+
+  // Cień
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.beginPath();
+  ctx.arc(x + 3, y + 3, r, 0, Math.PI*2);
+  ctx.fill();
+
+  // Pionek — gradient
+  const g = ctx.createRadialGradient(x - r*0.3, y - r*0.3, r*0.1, x, y, r);
+  g.addColorStop(0, currentSkin === 'neon' ? lighten(baseColor) : (isP1 ? '#555' : '#fff'));
+  g.addColorStop(1, baseColor);
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI*2);
+  ctx.fill();
+
+  // Obwódka
+  ctx.strokeStyle = currentSkin === 'neon'
+    ? 'rgba(255,255,255,0.2)'
+    : (isP1 ? '#000' : '#bbb');
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI*2);
+  ctx.stroke();
+
+  // Damka — korona
+  if (piece.king) {
+    ctx.fillStyle = kingColor;
+    ctx.font = `bold ${Math.floor(CELL * 0.4)}px serif`;
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('♛', x, y);
+  }
+}
+
+function lighten(hex) {
+  // Rozjaśnij kolor dla gradientu
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgb(${Math.min(255,r+80)},${Math.min(255,g+80)},${Math.min(255,b+80)})`;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MINIATURKI SKÓREK W PANELU
+// ══════════════════════════════════════════════════════════════════════════════
+function drawSkinPreview(canvasId, skinKey) {
+  const c   = document.getElementById(canvasId);
+  const cx  = c.getContext('2d');
+  c.width   = 24; c.height = 24;
+  const s   = SKINS[skinKey];
+  const cs  = 6;
+  for (let r = 0; r < 4; r++) {
+    for (let cc2 = 0; cc2 < 4; cc2++) {
+      cx.fillStyle = (r + cc2) % 2 === 1 ? s.darkCell : s.lightCell;
+      cx.fillRect(cc2*cs, r*cs, cs, cs);
+    }
+  }
+  // Dwa pionki
+  cx.fillStyle = s.p1piece;
+  cx.beginPath(); cx.arc(9, 9, 3.5, 0, Math.PI*2); cx.fill();
+  cx.fillStyle = s.p2piece;
+  cx.beginPath(); cx.arc(15, 15, 3.5, 0, Math.PI*2); cx.fill();
+}
+
+drawSkinPreview('prev-neon',    'neon');
+drawSkinPreview('prev-classic', 'classic');
+
+// ══════════════════════════════════════════════════════════════════════════════
+// UI — ustawienia, home, restart
+// ══════════════════════════════════════════════════════════════════════════════
+document.getElementById('home-btn').addEventListener('click', () => {
+  window.location.href = '/';
+});
+
+const settingsBtn   = document.getElementById('settings-btn');
+const settingsPanel = document.getElementById('settings-panel');
+
+settingsBtn.addEventListener('click', () => {
+  settingsPanel.classList.toggle('open');
+});
+
+document.addEventListener('click', e => {
+  if (!settingsPanel.contains(e.target) && e.target !== settingsBtn) {
+    settingsPanel.classList.remove('open');
+  }
+});
+
+document.querySelectorAll('.skin-option').forEach(el => {
+  el.addEventListener('click', () => {
+    const s = el.dataset.skin;
+    currentSkin = s;
+    document.body.className = `skin-${s}`;
+    document.querySelectorAll('.skin-option').forEach(o => o.classList.remove('active'));
+    el.classList.add('active');
+    localStorage.setItem('warcaby-skin', s);
+    render();
+  });
+});
+
+// Przywróć skórkę z localStorage
+const savedSkin = localStorage.getItem('warcaby-skin');
+if (savedSkin && SKINS[savedSkin]) {
+  currentSkin = savedSkin;
+  document.body.className = `skin-${savedSkin}`;
+  document.querySelectorAll('.skin-option').forEach(o => {
+    o.classList.toggle('active', o.dataset.skin === savedSkin);
+  });
+}
+
+// Restart vote
+let myRestartVote = false;
+document.addEventListener('keydown', e => {
+  if (e.key.toLowerCase() === 'r' && myPlayer !== 0 && gamePhase === 'playing') {
+    myRestartVote = !myRestartVote;
+    socket.emit('restart_vote', { vote: myRestartVote });
+  }
+});
+
+// Render początkowy
+render();
+</script>
+</body>
+</html>
