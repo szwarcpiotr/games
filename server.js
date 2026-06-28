@@ -300,16 +300,25 @@ function getAllMoves(board, player) {
 
 function getMovesForPiece(row, col, board, player, isKing) {
   const moves = [];
-  const dirs  = isKing
+
+  // Ruchy proste — pionek tylko do przodu, damka w każdym kierunku
+  const moveDirs = isKing
     ? [[-1,-1],[-1,1],[1,-1],[1,1]]
     : player === 1 ? [[-1,-1],[-1,1]] : [[1,-1],[1,1]];
 
-  for (const [dr, dc] of dirs) {
+  for (const [dr, dc] of moveDirs) {
+    const nr = row + dr, nc = col + dc;
+    if (inBounds(nr, nc) && !board[nr][nc]) {
+      moves.push({ from: {row, col}, to: {row: nr, col: nc}, captures: [] });
+    }
+  }
+
+  // Bicia — dozwolone w KAŻDYM kierunku, również dla zwykłych pionków (w tym do tyłu)
+  const captureDirs = [[-1,-1],[-1,1],[1,-1],[1,1]];
+  for (const [dr, dc] of captureDirs) {
     const nr = row + dr, nc = col + dc;
     if (!inBounds(nr, nc)) continue;
-    if (!board[nr][nc]) {
-      moves.push({ from: {row, col}, to: {row: nr, col: nc}, captures: [] });
-    } else if (board[nr][nc].player !== player) {
+    if (board[nr][nc] && board[nr][nc].player !== player) {
       const jr = nr + dr, jc = nc + dc;
       if (inBounds(jr, jc) && !board[jr][jc]) {
         moves.push({ from: {row, col}, to: {row: jr, col: jc}, captures: [{row: nr, col: nc}] });
@@ -355,8 +364,8 @@ function doCheckersRestart(room) {
   room.phase        = 'playing';
   room.mustContinue = null;
   room.restartVotes.clear();
-  io.to(room.id).emit('restart',       { boardState: room.board, turn: room.turn });
-  io.to(room.id).emit('restart_votes', { count: 0 });
+  warcabyNS.to(room.id).emit('restart',       { boardState: room.board, turn: room.turn });
+  warcabyNS.to(room.id).emit('restart_votes', { count: 0 });
 }
 
 // Namespace /warcaby
