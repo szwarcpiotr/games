@@ -286,19 +286,20 @@ function initCheckersBoard() {
 
 function inBounds(r, c) { return r >= 0 && r < 8 && c >= 0 && c < 8; }
 
-function getAllMoves(board, player) {
+function getAllMoves(board, player, continuationSquare = null) {
   const moves = [];
   for (let r = 0; r < 8; r++) {
     for (let c = 0; c < 8; c++) {
       const p = board[r][c];
       if (!p || p.player !== player) continue;
-      moves.push(...getMovesForPiece(r, c, board, player, p.king));
+      const isContinuation = !!(continuationSquare && continuationSquare.row === r && continuationSquare.col === c);
+      moves.push(...getMovesForPiece(r, c, board, player, p.king, isContinuation));
     }
   }
   return moves;
 }
 
-function getMovesForPiece(row, col, board, player, isKing) {
+function getMovesForPiece(row, col, board, player, isKing, isContinuation = false) {
   const moves = [];
 
   // Ruchy proste — pionek tylko do przodu, damka w każdym kierunku
@@ -306,15 +307,21 @@ function getMovesForPiece(row, col, board, player, isKing) {
     ? [[-1,-1],[-1,1],[1,-1],[1,1]]
     : player === 1 ? [[-1,-1],[-1,1]] : [[1,-1],[1,1]];
 
-  for (const [dr, dc] of moveDirs) {
-    const nr = row + dr, nc = col + dc;
-    if (inBounds(nr, nc) && !board[nr][nc]) {
-      moves.push({ from: {row, col}, to: {row: nr, col: nc}, captures: [] });
+  if (!isContinuation) {
+    for (const [dr, dc] of moveDirs) {
+      const nr = row + dr, nc = col + dc;
+      if (inBounds(nr, nc) && !board[nr][nc]) {
+        moves.push({ from: {row, col}, to: {row: nr, col: nc}, captures: [] });
+      }
     }
   }
 
-  // Bicia — dozwolone w KAŻDYM kierunku, również dla zwykłych pionków (w tym do tyłu)
-  const captureDirs = [[-1,-1],[-1,1],[1,-1],[1,1]];
+  // Bicia: pierwsze bicie w turze — tylko do przodu dla pionka (jak normalny ruch).
+  // Bicia w kontynuacji tej samej tury (combo) — w KAŻDYM kierunku, również dla pionka.
+  const captureDirs = (isKing || isContinuation)
+    ? [[-1,-1],[-1,1],[1,-1],[1,1]]
+    : moveDirs;
+
   for (const [dr, dc] of captureDirs) {
     const nr = row + dr, nc = col + dc;
     if (!inBounds(nr, nc)) continue;
@@ -403,7 +410,7 @@ warcabyNS.on('connection', (socket) => {
     }
 
     // Weryfikacja — czy ruch jest w liście legalnych
-    const allMoves   = getAllMoves(room.board, room.turn);
+    const allMoves   = getAllMoves(room.board, room.turn, room.mustContinue);
     const hasCapture = allMoves.some(m => m.captures.length > 0);
     const legal      = allMoves.filter(m =>
       m.from.row === move.from.row && m.from.col === move.from.col &&
@@ -421,7 +428,7 @@ warcabyNS.on('connection', (socket) => {
     if (legal[0].captures.length > 0) {
       const landedPiece = room.board[legal[0].to.row][legal[0].to.col];
       const furtherCaptures = getMovesForPiece(
-        legal[0].to.row, legal[0].to.col, room.board, movedPlayer, landedPiece.king
+        legal[0].to.row, legal[0].to.col, room.board, movedPlayer, landedPiece.king, true
       ).filter(m => m.captures.length > 0);
       if (furtherCaptures.length > 0) {
         mustContinue = { row: legal[0].to.row, col: legal[0].to.col };

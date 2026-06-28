@@ -339,9 +339,9 @@ socket.on('state', ({ boardState, turn, phase, mustContinue }) => {
   currentTurn = turn;
   gamePhase = phase;
   if (mustContinue && myPlayer === turn) {
+    forcedContinue = { row: mustContinue.row, col: mustContinue.col };
     selected   = { row: mustContinue.row, col: mustContinue.col };
     validMoves = getValidMovesFor(mustContinue.row, mustContinue.col, board, myPlayer);
-    forcedContinue = { row: mustContinue.row, col: mustContinue.col };
   } else {
     selected   = null;
     validMoves = [];
@@ -453,7 +453,9 @@ canvas.addEventListener('click', e => {
 // LOGIKA RUCHÓW (klient — do podpowiedzi, serwer weryfikuje)
 // ══════════════════════════════════════════════════════════════════════════════
 function getValidMovesFor(row, col, b, player) {
-  const allMoves    = getAllMoves(b, player);
+  const continuationSquare = (forcedContinue && forcedContinue.row === row && forcedContinue.col === col)
+    ? { row, col } : null;
+  const allMoves    = getAllMoves(b, player, continuationSquare);
   const hasCapture  = allMoves.some(m => m.captures.length > 0);
   return allMoves.filter(m =>
     m.from.row === row && m.from.col === col &&
@@ -461,19 +463,20 @@ function getValidMovesFor(row, col, b, player) {
   );
 }
 
-function getAllMoves(b, player) {
+function getAllMoves(b, player, continuationSquare = null) {
   const moves = [];
   for (let r = 0; r < 8; r++) {
     for (let c = 0; c < 8; c++) {
       const p = b[r][c];
       if (!p || p.player !== player) continue;
-      moves.push(...getMovesForPiece(r, c, b, player, p.king));
+      const isContinuation = !!(continuationSquare && continuationSquare.row === r && continuationSquare.col === c);
+      moves.push(...getMovesForPiece(r, c, b, player, p.king, isContinuation));
     }
   }
   return moves;
 }
 
-function getMovesForPiece(row, col, b, player, isKing) {
+function getMovesForPiece(row, col, b, player, isKing, isContinuation = false) {
   const moves = [];
 
   // Ruchy proste — pionek tylko do przodu, damka w każdym kierunku
@@ -483,15 +486,20 @@ function getMovesForPiece(row, col, b, player, isKing) {
       ? [[-1,-1],[-1,1]]
       : [[1,-1],[1,1]];
 
-  for (const [dr, dc] of moveDirs) {
-    const nr = row + dr, nc = col + dc;
-    if (inBounds(nr, nc) && !b[nr][nc]) {
-      moves.push({ from: {row, col}, to: {row: nr, col: nc}, captures: [] });
+  if (!isContinuation) {
+    for (const [dr, dc] of moveDirs) {
+      const nr = row + dr, nc = col + dc;
+      if (inBounds(nr, nc) && !b[nr][nc]) {
+        moves.push({ from: {row, col}, to: {row: nr, col: nc}, captures: [] });
+      }
     }
   }
 
-  // Bicia — dozwolone w KAŻDYM kierunku, również dla zwykłych pionków (w tym do tyłu)
-  const captureDirs = [[-1,-1],[-1,1],[1,-1],[1,1]];
+  // Pierwsze bicie w turze — tylko do przodu dla pionka. Bicie w kontynuacji (combo) — w każdym kierunku.
+  const captureDirs = (isKing || isContinuation)
+    ? [[-1,-1],[-1,1],[1,-1],[1,1]]
+    : moveDirs;
+
   for (const [dr, dc] of captureDirs) {
     const nr = row + dr, nc = col + dc;
     if (!inBounds(nr, nc)) continue;
