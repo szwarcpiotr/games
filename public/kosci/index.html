@@ -101,6 +101,12 @@
 
   #player-names th.active-col { color: #fff; background: #123; }
 
+  .delta-pos { font-size: 10px; color: #4a9; margin-left: 4px; font-weight: normal; }
+  .delta-neg { font-size: 10px; color: #a55; margin-left: 4px; font-weight: normal; }
+  .delta-rem { font-size: 10px; color: #445; margin-left: 2px; }
+
+  td.preview .delta-pos, td.preview .delta-neg { opacity: 0.7; }
+
   #status-bar { margin-top: 16px; font-size: 13px; color: #666; letter-spacing: 1px; display: flex; gap: 24px; }
 
   #game-over-box {
@@ -238,7 +244,7 @@ socket.on('assigned', ({ player, playerIndex }) => {
 
 socket.on('lobby', ({ players, spectators }) => {
   if (state.phase === 'waiting') {
-    overlayMsg.textContent = `Gracze: ${players}/4 (min. 2) — czekanie…`;
+    overlayMsg.textContent = `Gracze: ${players}/5 (min. 2) — czekanie…`;
     startBtn.disabled = !(players >= 2 && myPlayer !== 0);
   }
   if (spectators > 0) {
@@ -353,28 +359,60 @@ function renderTable() {
 
   const canPreview = state.phase === 'playing' && state.rollsLeft < 3;
 
-  CATEGORIES.forEach((cat, ci) => {
+  CATEGORIES.forEach((cat) => {
     html += `<tr><td class="label">${cat.label}</td>`;
     players.forEach((pid, i) => {
       const card = state.scores[pid];
       const filled = card && card[cat.key] !== null;
+
       if (filled) {
-        html += `<td class="filled">${card[cat.key]}</td>`;
+        if (cat.upper) {
+          const par   = cat.value * 3;
+          const delta = card[cat.key] - par;
+          const sign  = delta >= 0 ? '+' : '';
+          const dClass = delta >= 0 ? 'delta-pos' : 'delta-neg';
+          html += `<td class="filled">${card[cat.key]}<span class="${dClass}">${sign}${delta}</span></td>`;
+        } else {
+          html += `<td class="filled">${card[cat.key]}</td>`;
+        }
       } else if (canPreview && isMyTurn() && i === myIndex) {
         const preview = scoreFor(state.dice, cat.key);
         const cls = preview === 0 ? 'preview preview-zero' : 'preview';
-        html += `<td class="${cls}" data-category="${cat.key}">${preview}</td>`;
+        if (cat.upper) {
+          const par   = cat.value * 3;
+          const delta = preview - par;
+          const sign  = delta >= 0 ? '+' : '';
+          const dClass = delta >= 0 ? 'delta-pos' : 'delta-neg';
+          html += `<td class="${cls}" data-category="${cat.key}">${preview}<span class="${dClass}">${sign}${delta}</span></td>`;
+        } else {
+          html += `<td class="${cls}" data-category="${cat.key}">${preview}</td>`;
+        }
       } else {
         html += `<td class="empty-other">—</td>`;
       }
     });
     html += '</tr>';
+
     if (cat.key === 'sixes') {
-      html += '<tr class="section-row"><td class="label">Bonus (≥63 → +35)</td>';
+      // Wiersz bonusu — pokazuje skumulowaną deltę względem progu 63
+      html += '<tr class="section-row"><td class="label">Bonus ≥63 → +35</td>';
       players.forEach(pid => {
-        const card = state.scores[pid];
-        const bonus = upperSum(card) >= 63 ? 35 : 0;
-        html += `<td>${bonus}</td>`;
+        const card       = state.scores[pid];
+        const uSum       = upperSum(card);
+        const filledCats = CATEGORIES.filter(c => c.upper && card[c.key] !== null);
+        const parSoFar   = filledCats.reduce((a, c) => a + c.value * 3, 0);
+        const cumDelta   = uSum - parSoFar;
+
+        if (uSum >= 63) {
+          html += `<td><span class="delta-pos">+35</span></td>`;
+        } else {
+          const remaining = 63 - uSum;
+          const sign      = cumDelta >= 0 ? '+' : '';
+          const dClass    = cumDelta >= 0 ? 'delta-pos' : 'delta-neg';
+          const deltaStr  = filledCats.length > 0 ? `<span class="${dClass}">${sign}${cumDelta}</span>` : '';
+          const remStr    = filledCats.length > 0 ? `<span class="delta-rem"> (brak ${remaining})</span>` : `<span class="delta-rem">cel: 63</span>`;
+          html += `<td>${deltaStr}${remStr}</td>`;
+        }
       });
       html += '</tr>';
     }

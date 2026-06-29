@@ -494,7 +494,7 @@ warcabyNS.on('connection', (socket) => {
 // KOŚCI (Yahtzee)
 // ══════════════════════════════════════════════════════════════════════════════
 const diceRooms = new Map();
-const MAX_DICE_PLAYERS = 4;
+const MAX_DICE_PLAYERS = 5;
 
 const CATEGORIES = [
   { key: 'ones',          label: 'Jedynki',      upper: true,  value: 1 },
