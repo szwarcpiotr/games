@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>Kości</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a0f;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    font-family: 'Courier New', monospace;
+    color: #e0e0e0;
+    user-select: none;
+    padding: 56px 16px 40px;
+  }
+
+  #home-btn {
+    position: fixed; top: 16px; left: 16px;
+    background: rgba(255,255,255,0.08); border: 1px solid #333;
+    color: #aaa; font-size: 18px; width: 40px; height: 40px;
+    border-radius: 8px; cursor: pointer; display: flex;
+    align-items: center; justify-content: center;
+    transition: background 0.2s, color 0.2s; z-index: 30;
+  }
+  #home-btn:hover { background: rgba(255,255,255,0.18); color: #fff; }
+
+  h1 { font-size: 28px; letter-spacing: 6px; color: #4fc3f7; margin-bottom: 18px; text-transform: uppercase; }
+
+  #overlay {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.85);
+    font-size: 18px; gap: 14px;
+    z-index: 40;
+  }
+  #overlay h2 { font-size: 30px; letter-spacing: 4px; color: #4fc3f7; }
+  #overlay p  { color: #aaa; font-size: 14px; }
+  #overlay.hidden { display: none; }
+  #start-btn {
+    margin-top: 8px; background: #4fc3f7; color: #03222e; border: none;
+    padding: 10px 22px; border-radius: 8px; font-family: inherit; font-size: 15px;
+    letter-spacing: 1px; cursor: pointer; font-weight: bold;
+  }
+  #start-btn:hover { background: #7ad4fb; }
+  #start-btn:disabled { background: #355; color: #678; cursor: not-allowed; }
+
+  #turn-banner { font-size: 14px; color: #aaa; letter-spacing: 1px; margin-bottom: 14px; min-height: 20px; }
+  #turn-banner.my-turn { color: #4fc3f7; }
+
+  #dice-area { display: flex; gap: 14px; margin-bottom: 14px; }
+  .die {
+    width: 64px; height: 64px; border-radius: 10px;
+    background: linear-gradient(160deg, #fdfdff, #c9c9d6);
+    display: grid; place-items: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    border: 3px solid transparent;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.15s;
+    position: relative;
+  }
+  .die:hover { transform: translateY(-2px); }
+  .die.held { border-color: #4fc3f7; box-shadow: 0 4px 14px rgba(79,195,247,0.5); }
+  .die.disabled { cursor: not-allowed; opacity: 0.55; }
+  .die svg { width: 70%; height: 70%; }
+  .pip { fill: #1a1a2e; }
+
+  .die.rolling { animation: shake 0.08s infinite; }
+  @keyframes shake { 0% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } 100% { transform: rotate(-4deg); } }
+
+  #controls { display: flex; gap: 14px; align-items: center; margin-bottom: 22px; }
+  #roll-btn {
+    background: #ef5350; color: #fff; border: none;
+    padding: 12px 28px; border-radius: 8px; font-family: inherit; font-size: 15px;
+    letter-spacing: 1px; cursor: pointer; font-weight: bold;
+  }
+  #roll-btn:hover:not(:disabled) { background: #ff7a76; }
+  #roll-btn:disabled { background: #3a2a2a; color: #765; cursor: not-allowed; }
+  #rolls-left { font-size: 13px; color: #888; letter-spacing: 1px; }
+
+  table { border-collapse: collapse; font-size: 13px; max-width: 96vw; overflow-x: auto; display: block; }
+  thead, tbody { display: table; width: 100%; table-layout: fixed; }
+  th, td { border: 1px solid #1a3a2a; padding: 7px 10px; text-align: center; min-width: 76px; }
+  th { background: #0d1f1a; color: #4fc3f7; letter-spacing: 1px; font-size: 12px; }
+  td.label { text-align: left; color: #aaa; font-size: 12px; white-space: nowrap; min-width: 110px; }
+  tr.section-row td { background: #0d1a14; color: #556; font-size: 11px; font-style: italic; }
+
+  td.filled { color: #e0e0e0; font-weight: bold; background: rgba(255,255,255,0.03); }
+  td.empty-other { color: #444; }
+  td.preview {
+    color: #4fc3f7; opacity: 0.4; cursor: pointer; font-weight: bold;
+    transition: opacity 0.15s, background 0.15s;
+  }
+  td.preview:hover { opacity: 0.9; background: rgba(79,195,247,0.12); }
+  td.preview-zero { color: #666; }
+
+  tfoot td { font-weight: bold; color: #4fc3f7; background: #0d1f1a; }
+
+  #player-names th.active-col { color: #fff; background: #123; }
+
+  #status-bar { margin-top: 16px; font-size: 13px; color: #666; letter-spacing: 1px; display: flex; gap: 24px; }
+
+  #game-over-box {
+    margin-top: 18px; text-align: center; color: #4fc3f7; font-size: 16px; letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+
+<button id="home-btn" title="Menu główne">⌂</button>
+<h1>🎲 Kości</h1>
+
+<div id="overlay">
+  <h2>KOŚCI</h2>
+  <p id="overlay-msg">Łączenie z serwerem…</p>
+  <button id="start-btn" disabled>Zacznij grę</button>
+</div>
+
+<div id="turn-banner"></div>
+
+<div id="dice-area"></div>
+
+<div id="controls">
+  <button id="roll-btn" disabled>🎲 Rzuć</button>
+  <span id="rolls-left"></span>
+</div>
+
+<div id="table-wrap"></div>
+
+<div id="game-over-box" style="display:none;"></div>
+
+<div id="status-bar">
+  <span id="status"></span>
+  <span id="restart-status" style="color:#888"></span>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const overlay     = document.getElementById('overlay');
+const overlayMsg   = document.getElementById('overlay-msg');
+const startBtn     = document.getElementById('start-btn');
+const turnBanner   = document.getElementById('turn-banner');
+const diceArea     = document.getElementById('dice-area');
+const rollBtn      = document.getElementById('roll-btn');
+const rollsLeftEl  = document.getElementById('rolls-left');
+const tableWrap    = document.getElementById('table-wrap');
+const statusEl     = document.getElementById('status');
+const gameOverBox  = document.getElementById('game-over-box');
+
+const CATEGORIES = [
+  { key: 'ones',          label: 'Jedynki',      upper: true,  value: 1 },
+  { key: 'twos',          label: 'Dwójki',       upper: true,  value: 2 },
+  { key: 'threes',        label: 'Trójki',       upper: true,  value: 3 },
+  { key: 'fours',         label: 'Czwórki',      upper: true,  value: 4 },
+  { key: 'fives',         label: 'Piątki',       upper: true,  value: 5 },
+  { key: 'sixes',         label: 'Szóstki',      upper: true,  value: 6 },
+  { key: 'threeKind',     label: '3 jednakowe',  upper: false },
+  { key: 'fourKind',      label: '4 jednakowe',  upper: false },
+  { key: 'fullHouse',     label: 'Full',         upper: false },
+  { key: 'smallStraight', label: 'Mały strit',   upper: false },
+  { key: 'largeStraight', label: 'Duży strit',   upper: false },
+  { key: 'yahtzee',       label: 'Generał',      upper: false },
+  { key: 'chance',        label: 'Szansa',       upper: false },
+];
+
+function diceCounts(dice) {
+  const c = {};
+  dice.forEach(d => c[d] = (c[d] || 0) + 1);
+  return c;
+}
+
+function scoreFor(dice, key) {
+  const cat = CATEGORIES.find(c => c.key === key);
+  if (cat.upper) {
+    const c = diceCounts(dice);
+    return (c[cat.value] || 0) * cat.value;
+  }
+  const counts = diceCounts(dice);
+  const sum    = dice.reduce((a, b) => a + b, 0);
+  const vals   = Object.values(counts);
+  const uniqueSorted = [...new Set(dice)].sort((a, b) => a - b);
+
+  switch (key) {
+    case 'threeKind': return vals.some(c => c >= 3) ? sum : 0;
+    case 'fourKind':  return vals.some(c => c >= 4) ? sum : 0;
+    case 'fullHouse': {
+      const sortedVals = [...vals].sort();
+      return (sortedVals.length === 2 && sortedVals[0] === 2 && sortedVals[1] === 3) ? 25 : 0;
+    }
+    case 'smallStraight':
+      return ['1234', '2345', '3456'].some(seq =>
+        seq.split('').every(ch => uniqueSorted.includes(Number(ch)))
+      ) ? 30 : 0;
+    case 'largeStraight': {
+      const s = uniqueSorted.join('');
+      return (s === '12345' || s === '23456') ? 40 : 0;
+    }
+    case 'yahtzee': return vals.some(c => c === 5) ? 50 : 0;
+    case 'chance':  return sum;
+    default: return 0;
+  }
+}
+
+function upperSum(card) {
+  return CATEGORIES.filter(c => c.upper).reduce((a, c) => a + (card[c.key] || 0), 0);
+}
+function totalScore(card) {
+  const upper = upperSum(card);
+  const bonus = upper >= 63 ? 35 : 0;
+  const lower = CATEGORIES.filter(c => !c.upper).reduce((a, c) => a + (card[c.key] || 0), 0);
+  return upper + bonus + lower + (card.yahtzeeBonusCount || 0) * 100;
+}
+
+// ── Stan ──────────────────────────────────────────────────────────────────────
+let myPlayer    = 0;   // 1..4 lub 0 (widz)
+let myIndex     = -1;
+let state       = { phase: 'waiting', dice: [1,1,1,1,1], held: [false,false,false,false,false], rollsLeft: 3, turnIndex: 0, players: [], scores: {} };
+let myRestartVote = false;
+
+const socket = io('/kosci', { transports: ['websocket', 'polling'] });
+
+socket.on('connect', () => { overlayMsg.textContent = 'Połączono. Czekanie na graczy…'; });
+
+socket.on('assigned', ({ player, playerIndex }) => {
+  myPlayer = player;
+  myIndex  = playerIndex;
+  if (player === 0) {
+    overlayMsg.textContent = 'Oglądasz jako widz.';
+    statusEl.textContent = 'Tryb widza';
+  } else {
+    overlayMsg.textContent = `Jesteś Graczem ${player}. Czekanie na innych / start gry…`;
+    statusEl.textContent = `Gracz ${player}`;
+  }
+});
+
+socket.on('lobby', ({ players, spectators }) => {
+  if (state.phase === 'waiting') {
+    overlayMsg.textContent = `Gracze: ${players}/4 (min. 2) — czekanie…`;
+    startBtn.disabled = !(players >= 2 && myPlayer !== 0);
+  }
+  if (spectators > 0) {
+    statusEl.textContent += `  |  Widzowie: ${spectators}`;
+  }
+});
+
+startBtn.addEventListener('click', () => socket.emit('start_game'));
+
+socket.on('state', (snap) => {
+  state = snap;
+  if (state.phase === 'playing' || state.phase === 'over') overlay.classList.add('hidden');
+  render();
+});
+
+socket.on('restart', (snap) => {
+  state = snap;
+  myRestartVote = false;
+  gameOverBox.style.display = 'none';
+  overlay.classList.add('hidden');
+  render();
+});
+
+socket.on('game_over', ({ scores, totals, winnerIndex }) => {
+  state.scores = scores;
+  state.phase  = 'over';
+  render();
+  const winnerName = `Gracz ${winnerIndex + 1}`;
+  const lines = totals.map((t, i) => `Gracz ${i+1}: ${t.total} pkt`).join(' &nbsp;|&nbsp; ');
+  gameOverBox.style.display = 'block';
+  gameOverBox.innerHTML = `🏆 Wygrywa ${winnerName}! <br><span style="color:#888;font-size:13px">${lines}</span>`;
+});
+
+socket.on('player_left', ({ player }) => {
+  overlay.classList.remove('hidden');
+  overlayMsg.textContent = `Gracz ${player} wyszedł. Czekanie na nowego gracza…`;
+  startBtn.disabled = true;
+});
+
+socket.on('disconnect', () => {
+  overlay.classList.remove('hidden');
+  overlayMsg.textContent = 'Rozłączono z serwerem. Odśwież stronę.';
+});
+
+socket.on('invalid_move', () => {});
+
+// ── Rendering ──────────────────────────────────────────────────────────────────
+function pipPositions(n) {
+  const layouts = {
+    1: [[50,50]],
+    2: [[28,28],[72,72]],
+    3: [[28,28],[50,50],[72,72]],
+    4: [[28,28],[28,72],[72,28],[72,72]],
+    5: [[28,28],[28,72],[50,50],[72,28],[72,72]],
+    6: [[28,25],[28,50],[28,75],[72,25],[72,50],[72,75]],
+  };
+  return layouts[n];
+}
+function dieSVG(n) {
+  const pips = pipPositions(n).map(([x,y]) => `<circle class="pip" cx="${x}" cy="${y}" r="9"/>`).join('');
+  return `<svg viewBox="0 0 100 100">${pips}</svg>`;
+}
+
+function isMyTurn() {
+  return state.phase === 'playing' && myPlayer !== 0 && myIndex === state.turnIndex;
+}
+
+function renderDice() {
+  diceArea.innerHTML = '';
+  const canHold = isMyTurn() && state.rollsLeft < 3 && state.rollsLeft > 0;
+  state.dice.forEach((val, i) => {
+    const die = document.createElement('div');
+    die.className = 'die' + (state.held[i] ? ' held' : '') + (canHold ? '' : ' disabled');
+    die.innerHTML = dieSVG(val);
+    die.addEventListener('click', () => {
+      if (!canHold) return;
+      socket.emit('hold', { index: i });
+    });
+    diceArea.appendChild(die);
+  });
+}
+
+function updateTurnBanner() {
+  if (state.phase === 'waiting') { turnBanner.textContent = ''; return; }
+  if (state.phase === 'over') { turnBanner.textContent = 'Koniec gry'; turnBanner.classList.remove('my-turn'); return; }
+  const t = state.turnIndex + 1;
+  if (isMyTurn()) {
+    turnBanner.textContent = '➤ Twoja tura — rzucaj i wybierz kategorię';
+    turnBanner.classList.add('my-turn');
+  } else {
+    turnBanner.textContent = `Tura: Gracz ${t}`;
+    turnBanner.classList.remove('my-turn');
+  }
+}
+
+function updateRollBtn() {
+  rollBtn.disabled = !(isMyTurn() && state.rollsLeft > 0);
+  rollsLeftEl.textContent = state.phase === 'playing' ? `pozostałe rzuty: ${state.rollsLeft}/3` : '';
+}
+
+function renderTable() {
+  const players = state.players;
+  if (players.length === 0) { tableWrap.innerHTML = ''; return; }
+
+  let html = '<table><thead><tr id="player-names"><th class="label">Kategoria</th>';
+  players.forEach((pid, i) => {
+    const active = (state.phase === 'playing' && i === state.turnIndex) ? ' class="active-col"' : '';
+    const me = (i === myIndex) ? ' (Ty)' : '';
+    html += `<th${active}>Gracz ${i+1}${me}</th>`;
+  });
+  html += '</tr></thead><tbody>';
+
+  const canPreview = state.phase === 'playing' && state.rollsLeft < 3;
+
+  CATEGORIES.forEach((cat, ci) => {
+    html += `<tr><td class="label">${cat.label}</td>`;
+    players.forEach((pid, i) => {
+      const card = state.scores[pid];
+      const filled = card && card[cat.key] !== null;
+      if (filled) {
+        html += `<td class="filled">${card[cat.key]}</td>`;
+      } else if (canPreview && isMyTurn() && i === myIndex) {
+        const preview = scoreFor(state.dice, cat.key);
+        const cls = preview === 0 ? 'preview preview-zero' : 'preview';
+        html += `<td class="${cls}" data-category="${cat.key}">${preview}</td>`;
+      } else {
+        html += `<td class="empty-other">—</td>`;
+      }
+    });
+    html += '</tr>';
+    if (cat.key === 'sixes') {
+      html += '<tr class="section-row"><td class="label">Bonus (≥63 → +35)</td>';
+      players.forEach(pid => {
+        const card = state.scores[pid];
+        const bonus = upperSum(card) >= 63 ? 35 : 0;
+        html += `<td>${bonus}</td>`;
+      });
+      html += '</tr>';
+    }
+  });
+
+  html += '</tbody><tfoot><tr><td class="label">SUMA</td>';
+  players.forEach(pid => {
+    const card = state.scores[pid];
+    html += `<td>${totalScore(card)}</td>`;
+  });
+  html += '</tr></tfoot></table>';
+
+  tableWrap.innerHTML = html;
+
+  tableWrap.querySelectorAll('td.preview').forEach(td => {
+    td.addEventListener('click', () => {
+      socket.emit('score', { category: td.dataset.category });
+    });
+  });
+}
+
+function render() {
+  renderDice();
+  updateTurnBanner();
+  updateRollBtn();
+  renderTable();
+}
+
+// ── Akcje ──────────────────────────────────────────────────────────────────────
+rollBtn.addEventListener('click', () => {
+  if (rollBtn.disabled) return;
+  socket.emit('roll');
+});
+
+// ── Home button ────────────────────────────────────────────────────────────────
+document.getElementById('home-btn').addEventListener('click', () => { window.location.href = '/'; });
+
+// ── Restart vote ───────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key.toLowerCase() === 'r' && myPlayer !== 0) {
+    myRestartVote = !myRestartVote;
+    socket.emit('restart_vote', { vote: myRestartVote });
+  }
+});
+
+socket.on('restart_votes', ({ count }) => {
+  const el = document.getElementById('restart-status');
+  if (myPlayer === 0) return;
+  el.textContent = `restart: R  ${count}/2`;
+  el.style.color = myRestartVote ? '#4fc3f7' : '#666';
+});
+
+render();
+</script>
+</body>
+</html>

@@ -108,15 +108,14 @@
     </div>
   </a>
 
-  <!-- Placeholder na przyszłe gry -->
-  <div class="card" style="opacity:0.3;pointer-events:none;">
-    <canvas class="card-preview" style="background:#0d1a14"></canvas>
+  <a class="card" href="/kosci">
+    <canvas class="card-preview" id="preview-kosci"></canvas>
     <div class="card-info">
-      <div class="card-title">Wkrótce</div>
-      <div class="card-desc">Następna gra w przygotowaniu</div>
-      <span class="card-badge" style="background:rgba(100,100,100,0.15);color:#556;">coming soon</span>
+      <div class="card-title">Kości</div>
+      <div class="card-desc">Yahtzee dla 2-4 graczy</div>
+      <span class="card-badge">2-4 graczy • online</span>
     </div>
-  </div>
+  </a>
 </div>
 
 <script>
@@ -125,7 +124,6 @@
   const canvas = document.getElementById('preview-cymbergaj');
   const ctx    = canvas.getContext('2d');
 
-  // Dopasuj rozdzielczość do wyświetlanego rozmiaru
   const rect = canvas.getBoundingClientRect();
   const dpr  = window.devicePixelRatio || 1;
   canvas.width  = canvas.offsetWidth  * dpr;
@@ -135,7 +133,6 @@
   const W = canvas.offsetWidth;
   const H = canvas.offsetHeight;
 
-  // Proporcje jak w grze (900x560)
   const sx = W / 900;
   const sy = H / 560;
 
@@ -157,7 +154,6 @@
     ctx.strokeStyle = '#1e4030'; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.arc(W/2, H/2, 70*sx, 0, Math.PI*2); ctx.stroke();
 
-    // Bramki
     ctx.strokeStyle = '#4fc3f7'; ctx.lineWidth = 2.5;
     ctx.beginPath(); ctx.moveTo(2, GOAL_TOP); ctx.lineTo(2, GOAL_BOT); ctx.stroke();
     ctx.strokeStyle = '#ef5350';
@@ -180,7 +176,6 @@
     ctx.beginPath(); ctx.arc(x, y, PUCK_R, 0, Math.PI*2); ctx.fill();
   }
 
-  // Statyczna scena — pozycja startowa
   drawTable();
   drawMallet(88 * sx, H/2, '#4fc3f7');
   drawMallet((900 - 88) * sx, H/2, '#ef5350');
@@ -207,7 +202,6 @@
     }
   }
 
-  // Pionki startowe
   const pr = CELL * 0.36;
   for (let r = 0; r < 8; r++) {
     for (let c = 0; c < 8; c++) {
@@ -223,6 +217,56 @@
       ctx.beginPath(); ctx.arc(x, y, pr, 0, Math.PI*2); ctx.fill();
     }
   }
+})();
+
+// ── Miniaturka kości ───────────────────────────────────────────────────────────
+(function() {
+  const canvas = document.getElementById('preview-kosci');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width  = canvas.offsetWidth  * dpr;
+  canvas.height = canvas.offsetHeight * dpr;
+  ctx.scale(dpr, dpr);
+  const W = canvas.offsetWidth, H = canvas.offsetHeight;
+
+  ctx.fillStyle = '#0d1f1a';
+  ctx.fillRect(0, 0, W, H);
+
+  function pipPositions(n) {
+    const layouts = {
+      1: [[50,50]], 2: [[28,28],[72,72]], 3: [[28,28],[50,50],[72,72]],
+      4: [[28,28],[28,72],[72,28],[72,72]],
+      5: [[28,28],[28,72],[50,50],[72,28],[72,72]],
+      6: [[28,25],[28,50],[28,75],[72,25],[72,50],[72,75]],
+    };
+    return layouts[n];
+  }
+
+  function drawDie(cx, cy, size, value, rot) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(rot);
+    const g = ctx.createLinearGradient(-size/2, -size/2, size/2, size/2);
+    g.addColorStop(0, '#fdfdff'); g.addColorStop(1, '#c9c9d6');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    const r = size * 0.16;
+    ctx.roundRect(-size/2, -size/2, size, size, r);
+    ctx.fill();
+    ctx.fillStyle = '#1a1a2e';
+    pipPositions(value).forEach(([px, py]) => {
+      const x = (px/100 - 0.5) * size;
+      const y = (py/100 - 0.5) * size;
+      ctx.beginPath(); ctx.arc(x, y, size * 0.07, 0, Math.PI*2); ctx.fill();
+    });
+    ctx.restore();
+  }
+
+  const size = Math.min(W, H) * 0.32;
+  drawDie(W*0.28, H*0.5, size, 5, -0.12);
+  drawDie(W*0.52, H*0.42, size, 3, 0.08);
+  drawDie(W*0.75, H*0.55, size, 6, -0.05);
 })();
 </script>
 </body>
