@@ -180,7 +180,7 @@
   /* Sticky pierwsza kolumna (etykieta) */
   td.label, th.label {
     text-align: left;
-    color: #999;
+    color: #9ab0a4;
     font-size: clamp(10px, 2.8vw, 12px);
     white-space: nowrap;
     position: sticky;
@@ -199,7 +199,7 @@
 
   tr.section-row td {
     background: #0a1410;
-    color: #445;
+    color: #5a7a68;
     font-size: clamp(9px, 2.5vw, 11px);
     font-style: italic;
   }
@@ -210,17 +210,17 @@
     font-weight: bold;
     background: rgba(255,255,255,0.02);
   }
-  td.empty-other { color: #333; }
+  td.empty-other { color: #5a7060; }
 
   td.preview {
     color: #4fc3f7;
-    opacity: 0.45;
+    opacity: 0.55;
     cursor: pointer;
     font-weight: bold;
     transition: opacity 0.12s, background 0.12s;
   }
   td.preview:active { opacity: 1; background: rgba(79,195,247,0.18); }
-  td.preview-zero { color: #555; }
+  td.preview-zero { color: #7a9a88; }
 
   tfoot td {
     font-weight: bold;
@@ -234,9 +234,25 @@
   #player-names th.active-col { color: #fff; background: #0f2a1e; }
 
   .delta-pos { font-size: clamp(8px, 2.3vw, 10px); color: #4a9; margin-left: 3px; font-weight: normal; }
-  .delta-neg { font-size: clamp(8px, 2.3vw, 10px); color: #a55; margin-left: 3px; font-weight: normal; }
-  .delta-rem { font-size: clamp(8px, 2.3vw, 10px); color: #445; margin-left: 2px; }
-  td.preview .delta-pos, td.preview .delta-neg { opacity: 0.75; }
+  .delta-neg { font-size: clamp(8px, 2.3vw, 10px); color: #c66; margin-left: 3px; font-weight: normal; }
+  .delta-rem { font-size: clamp(8px, 2.3vw, 10px); color: #5a7a68; margin-left: 2px; }
+  td.preview .delta-pos, td.preview .delta-neg { opacity: 0.85; }
+
+  /* ── Desktop: oryginalna ciemna kolorystyka ───────────────── */
+  @media (min-width: 640px) {
+    td.label, th.label    { background: #0a0a0f; color: #aaa; }
+    th.label              { background: #0d1f1a; }
+    tr:hover td.label     { background: #0d1a14; }
+    tr.section-row td     { background: #0d1a14; color: #556; }
+    tr.section-row td.label { background: #0d1a14; }
+    tfoot td              { background: #0d1f1a; }
+    tfoot td.label        { background: #0d1f1a; }
+    td.empty-other        { color: #333; }
+    td.preview            { opacity: 0.4; }
+    td.preview-zero       { color: #555; }
+    .delta-rem            { color: #445; }
+    .delta-neg            { color: #a55; }
+  }
 
   /* ── Dolny pasek ──────────────────────────────────────────── */
   #bottom-bar {
