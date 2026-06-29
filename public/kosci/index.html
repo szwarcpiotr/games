@@ -2,174 +2,387 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Kości</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
   body {
     background: #0a0a0f;
     display: flex;
     flex-direction: column;
     align-items: center;
     min-height: 100vh;
+    min-height: 100dvh;
     font-family: 'Courier New', monospace;
     color: #e0e0e0;
     user-select: none;
-    padding: 56px 16px 40px;
+    overscroll-behavior: none;
+  }
+
+  /* ── Górny pasek (sticky) ─────────────────────────────────── */
+  #top-bar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: #0a0a0f;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 12px 8px;
+    border-bottom: 1px solid #111;
+  }
+
+  #header-row {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
   }
 
   #home-btn {
-    position: fixed; top: 16px; left: 16px;
     background: rgba(255,255,255,0.08); border: 1px solid #333;
-    color: #aaa; font-size: 18px; width: 40px; height: 40px;
+    color: #aaa; font-size: 18px; min-width: 40px; min-height: 40px;
     border-radius: 8px; cursor: pointer; display: flex;
     align-items: center; justify-content: center;
-    transition: background 0.2s, color 0.2s; z-index: 30;
+    transition: background 0.2s, color 0.2s; flex-shrink: 0;
   }
-  #home-btn:hover { background: rgba(255,255,255,0.18); color: #fff; }
+  #home-btn:active { background: rgba(255,255,255,0.18); color: #fff; }
 
-  h1 { font-size: 28px; letter-spacing: 6px; color: #4fc3f7; margin-bottom: 18px; text-transform: uppercase; }
+  h1 {
+    font-size: clamp(16px, 5vw, 26px);
+    letter-spacing: clamp(3px, 2vw, 6px);
+    color: #4fc3f7;
+    text-transform: uppercase;
+    flex: 1;
+    text-align: center;
+  }
 
+  /* placeholder right side to center h1 */
+  .header-spacer { min-width: 40px; }
+
+  #turn-banner {
+    font-size: clamp(11px, 3.2vw, 14px);
+    color: #888;
+    letter-spacing: 0.5px;
+    min-height: 18px;
+    text-align: center;
+    padding: 0 8px;
+  }
+  #turn-banner.my-turn { color: #4fc3f7; font-weight: bold; }
+
+  /* ── Kości ────────────────────────────────────────────────── */
+  #dice-area {
+    display: flex;
+    gap: clamp(6px, 2vw, 14px);
+    padding: 10px 12px 6px;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .die {
+    flex: 1;
+    max-width: 72px;
+    aspect-ratio: 1;
+    border-radius: clamp(8px, 2.5vw, 12px);
+    background: linear-gradient(160deg, #fdfdff, #c9c9d6);
+    display: grid;
+    place-items: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    border: 3px solid transparent;
+    cursor: pointer;
+    transition: border-color 0.12s, transform 0.12s, box-shadow 0.12s;
+    touch-action: manipulation;
+  }
+  .die:active:not(.disabled) { transform: scale(0.93); }
+  .die.held {
+    border-color: #4fc3f7;
+    box-shadow: 0 0 16px rgba(79,195,247,0.55);
+  }
+  .die.disabled { cursor: not-allowed; opacity: 0.5; }
+  .die svg { width: 72%; height: 72%; }
+  .pip { fill: #1a1a2e; }
+
+  .die.rolling { animation: shake 0.07s infinite; }
+  @keyframes shake {
+    0%   { transform: rotate(-5deg) scale(1.04); }
+    50%  { transform: rotate(5deg)  scale(1.04); }
+    100% { transform: rotate(-5deg) scale(1.04); }
+  }
+
+  /* ── Kontrolki ────────────────────────────────────────────── */
+  #controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 12px 10px;
+    width: 100%;
+  }
+
+  #roll-btn {
+    background: #ef5350; color: #fff; border: none;
+    padding: 0 28px;
+    height: 48px;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: clamp(14px, 4vw, 16px);
+    letter-spacing: 1px; cursor: pointer; font-weight: bold;
+    touch-action: manipulation;
+    transition: background 0.15s, transform 0.1s;
+    flex: 1;
+    max-width: 220px;
+  }
+  #roll-btn:active:not(:disabled) { background: #ff7a76; transform: scale(0.97); }
+  #roll-btn:disabled { background: #2a1a1a; color: #554; cursor: not-allowed; }
+
+  #rolls-left {
+    font-size: clamp(11px, 3vw, 13px);
+    color: #888;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    min-width: 60px;
+  }
+
+  /* ── Tabela ───────────────────────────────────────────────── */
+  #table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 0 8px;
+  }
+
+  table {
+    border-collapse: collapse;
+    font-size: clamp(11px, 3vw, 13px);
+    width: 100%;
+    min-width: 280px;
+  }
+
+  th, td {
+    border: 1px solid #1a2e22;
+    padding: clamp(5px, 1.8vw, 8px) clamp(4px, 1.5vw, 10px);
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  th {
+    background: #0d1f1a;
+    color: #4fc3f7;
+    letter-spacing: 0.5px;
+    font-size: clamp(10px, 2.8vw, 12px);
+    position: sticky;
+    top: 0;
+  }
+
+  /* Sticky pierwsza kolumna (etykieta) */
+  td.label, th.label {
+    text-align: left;
+    color: #999;
+    font-size: clamp(10px, 2.8vw, 12px);
+    white-space: nowrap;
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: #0c1510;
+    min-width: 0;
+    padding-left: 8px;
+  }
+  th.label {
+    z-index: 3;
+    background: #0d1f1a;
+  }
+
+  tr:hover td.label { background: #0f1d16; }
+
+  tr.section-row td {
+    background: #0a1410;
+    color: #445;
+    font-size: clamp(9px, 2.5vw, 11px);
+    font-style: italic;
+  }
+  tr.section-row td.label { background: #0a1410; }
+
+  td.filled {
+    color: #e0e0e0;
+    font-weight: bold;
+    background: rgba(255,255,255,0.02);
+  }
+  td.empty-other { color: #333; }
+
+  td.preview {
+    color: #4fc3f7;
+    opacity: 0.45;
+    cursor: pointer;
+    font-weight: bold;
+    transition: opacity 0.12s, background 0.12s;
+  }
+  td.preview:active { opacity: 1; background: rgba(79,195,247,0.18); }
+  td.preview-zero { color: #555; }
+
+  tfoot td {
+    font-weight: bold;
+    color: #4fc3f7;
+    background: #0d1f1a;
+    position: sticky;
+    bottom: 0;
+  }
+  tfoot td.label { background: #0d1f1a; }
+
+  #player-names th.active-col { color: #fff; background: #0f2a1e; }
+
+  .delta-pos { font-size: clamp(8px, 2.3vw, 10px); color: #4a9; margin-left: 3px; font-weight: normal; }
+  .delta-neg { font-size: clamp(8px, 2.3vw, 10px); color: #a55; margin-left: 3px; font-weight: normal; }
+  .delta-rem { font-size: clamp(8px, 2.3vw, 10px); color: #445; margin-left: 2px; }
+  td.preview .delta-pos, td.preview .delta-neg { opacity: 0.75; }
+
+  /* ── Dolny pasek ──────────────────────────────────────────── */
+  #bottom-bar {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px 16px;
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+    gap: 10px;
+    margin-top: auto;
+  }
+
+  #status { font-size: 11px; color: #555; letter-spacing: 0.5px; }
+
+  #restart-btn {
+    display: none;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid #333;
+    color: #666;
+    font-family: inherit;
+    font-size: 12px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    touch-action: manipulation;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+    min-height: 36px;
+  }
+  #restart-btn.voted {
+    border-color: #4fc3f7;
+    color: #4fc3f7;
+    background: rgba(79,195,247,0.1);
+  }
+  #restart-btn:active { background: rgba(255,255,255,0.12); }
+
+  #restart-status { font-size: 11px; color: #555; }
+
+  #game-over-box {
+    padding: 14px 16px;
+    text-align: center;
+    color: #4fc3f7;
+    font-size: clamp(13px, 4vw, 16px);
+    letter-spacing: 0.5px;
+    line-height: 1.6;
+  }
+
+  /* ── Overlay ──────────────────────────────────────────────── */
   #overlay {
     position: fixed; inset: 0;
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
-    background: rgba(0,0,0,0.85);
-    font-size: 18px; gap: 14px;
-    z-index: 40;
+    background: rgba(0,0,0,0.88);
+    gap: 14px;
+    z-index: 50;
+    padding: 32px 24px;
+    text-align: center;
   }
-  #overlay h2 { font-size: 30px; letter-spacing: 4px; color: #4fc3f7; }
-  #overlay p  { color: #aaa; font-size: 14px; }
+  #overlay h2 {
+    font-size: clamp(22px, 7vw, 30px);
+    letter-spacing: 4px;
+    color: #4fc3f7;
+  }
+  #overlay p { color: #aaa; font-size: clamp(13px, 3.5vw, 15px); max-width: 300px; }
   #overlay.hidden { display: none; }
+
   #start-btn {
-    margin-top: 8px; background: #4fc3f7; color: #03222e; border: none;
-    padding: 10px 22px; border-radius: 8px; font-family: inherit; font-size: 15px;
+    background: #4fc3f7; color: #03222e; border: none;
+    padding: 14px 32px;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: clamp(14px, 4vw, 16px);
     letter-spacing: 1px; cursor: pointer; font-weight: bold;
+    touch-action: manipulation;
+    min-width: 180px;
+    min-height: 50px;
+    transition: background 0.15s, transform 0.1s;
   }
-  #start-btn:hover { background: #7ad4fb; }
-  #start-btn:disabled { background: #355; color: #678; cursor: not-allowed; }
-
-  #turn-banner { font-size: 14px; color: #aaa; letter-spacing: 1px; margin-bottom: 14px; min-height: 20px; }
-  #turn-banner.my-turn { color: #4fc3f7; }
-
-  #dice-area { display: flex; gap: 14px; margin-bottom: 14px; }
-  .die {
-    width: 64px; height: 64px; border-radius: 10px;
-    background: linear-gradient(160deg, #fdfdff, #c9c9d6);
-    display: grid; place-items: center;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-    border: 3px solid transparent;
-    cursor: pointer;
-    transition: border-color 0.15s, transform 0.15s;
-    position: relative;
-  }
-  .die:hover { transform: translateY(-2px); }
-  .die.held { border-color: #4fc3f7; box-shadow: 0 4px 14px rgba(79,195,247,0.5); }
-  .die.disabled { cursor: not-allowed; opacity: 0.55; }
-  .die svg { width: 70%; height: 70%; }
-  .pip { fill: #1a1a2e; }
-
-  .die.rolling { animation: shake 0.08s infinite; }
-  @keyframes shake { 0% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } 100% { transform: rotate(-4deg); } }
-
-  #controls { display: flex; gap: 14px; align-items: center; margin-bottom: 22px; }
-  #roll-btn {
-    background: #ef5350; color: #fff; border: none;
-    padding: 12px 28px; border-radius: 8px; font-family: inherit; font-size: 15px;
-    letter-spacing: 1px; cursor: pointer; font-weight: bold;
-  }
-  #roll-btn:hover:not(:disabled) { background: #ff7a76; }
-  #roll-btn:disabled { background: #3a2a2a; color: #765; cursor: not-allowed; }
-  #rolls-left { font-size: 13px; color: #888; letter-spacing: 1px; }
-
-  table { border-collapse: collapse; font-size: 13px; max-width: 96vw; overflow-x: auto; display: block; }
-  thead, tbody { display: table; width: 100%; table-layout: fixed; }
-  th, td { border: 1px solid #1a3a2a; padding: 7px 10px; text-align: center; min-width: 76px; }
-  th { background: #0d1f1a; color: #4fc3f7; letter-spacing: 1px; font-size: 12px; }
-  td.label { text-align: left; color: #aaa; font-size: 12px; white-space: nowrap; min-width: 110px; }
-  tr.section-row td { background: #0d1a14; color: #556; font-size: 11px; font-style: italic; }
-
-  td.filled { color: #e0e0e0; font-weight: bold; background: rgba(255,255,255,0.03); }
-  td.empty-other { color: #444; }
-  td.preview {
-    color: #4fc3f7; opacity: 0.4; cursor: pointer; font-weight: bold;
-    transition: opacity 0.15s, background 0.15s;
-  }
-  td.preview:hover { opacity: 0.9; background: rgba(79,195,247,0.12); }
-  td.preview-zero { color: #666; }
-
-  tfoot td { font-weight: bold; color: #4fc3f7; background: #0d1f1a; }
-
-  #player-names th.active-col { color: #fff; background: #123; }
-
-  .delta-pos { font-size: 10px; color: #4a9; margin-left: 4px; font-weight: normal; }
-  .delta-neg { font-size: 10px; color: #a55; margin-left: 4px; font-weight: normal; }
-  .delta-rem { font-size: 10px; color: #445; margin-left: 2px; }
-
-  td.preview .delta-pos, td.preview .delta-neg { opacity: 0.7; }
-
-  #status-bar { margin-top: 16px; font-size: 13px; color: #666; letter-spacing: 1px; display: flex; gap: 24px; }
-
-  #game-over-box {
-    margin-top: 18px; text-align: center; color: #4fc3f7; font-size: 16px; letter-spacing: 1px;
-  }
+  #start-btn:active:not(:disabled) { background: #7ad4fb; transform: scale(0.97); }
+  #start-btn:disabled { background: #234; color: #567; cursor: not-allowed; }
 </style>
 </head>
 <body>
 
-<button id="home-btn" title="Menu główne">⌂</button>
-<h1>🎲 Kości</h1>
-
 <div id="overlay">
-  <h2>KOŚCI</h2>
+  <h2>🎲 KOŚCI</h2>
   <p id="overlay-msg">Łączenie z serwerem…</p>
   <button id="start-btn" disabled>Zacznij grę</button>
 </div>
 
-<div id="turn-banner"></div>
+<div id="top-bar">
+  <div id="header-row">
+    <button id="home-btn" title="Menu główne">⌂</button>
+    <h1>Kości</h1>
+    <div class="header-spacer"></div>
+  </div>
+  <div id="turn-banner"></div>
 
-<div id="dice-area"></div>
+  <div id="dice-area"></div>
 
-<div id="controls">
-  <button id="roll-btn" disabled>🎲 Rzuć</button>
-  <span id="rolls-left"></span>
+  <div id="controls">
+    <button id="roll-btn" disabled>🎲 Rzuć</button>
+    <span id="rolls-left"></span>
+  </div>
 </div>
 
 <div id="table-wrap"></div>
 
 <div id="game-over-box" style="display:none;"></div>
 
-<div id="status-bar">
+<div id="bottom-bar">
   <span id="status"></span>
-  <span id="restart-status" style="color:#888"></span>
+  <button id="restart-btn">↺ Restart (0/2)</button>
+  <span id="restart-status"></span>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
 const overlay     = document.getElementById('overlay');
-const overlayMsg   = document.getElementById('overlay-msg');
-const startBtn     = document.getElementById('start-btn');
-const turnBanner   = document.getElementById('turn-banner');
-const diceArea     = document.getElementById('dice-area');
-const rollBtn      = document.getElementById('roll-btn');
-const rollsLeftEl  = document.getElementById('rolls-left');
-const tableWrap    = document.getElementById('table-wrap');
-const statusEl     = document.getElementById('status');
-const gameOverBox  = document.getElementById('game-over-box');
+const overlayMsg  = document.getElementById('overlay-msg');
+const startBtn    = document.getElementById('start-btn');
+const turnBanner  = document.getElementById('turn-banner');
+const diceArea    = document.getElementById('dice-area');
+const rollBtn     = document.getElementById('roll-btn');
+const rollsLeftEl = document.getElementById('rolls-left');
+const tableWrap   = document.getElementById('table-wrap');
+const statusEl    = document.getElementById('status');
+const gameOverBox = document.getElementById('game-over-box');
+const restartBtn  = document.getElementById('restart-btn');
 
 const CATEGORIES = [
-  { key: 'ones',          label: 'Jedynki',      upper: true,  value: 1 },
-  { key: 'twos',          label: 'Dwójki',       upper: true,  value: 2 },
-  { key: 'threes',        label: 'Trójki',       upper: true,  value: 3 },
-  { key: 'fours',         label: 'Czwórki',      upper: true,  value: 4 },
-  { key: 'fives',         label: 'Piątki',       upper: true,  value: 5 },
-  { key: 'sixes',         label: 'Szóstki',      upper: true,  value: 6 },
-  { key: 'threeKind',     label: '3 jednakowe',  upper: false },
-  { key: 'fourKind',      label: '4 jednakowe',  upper: false },
-  { key: 'fullHouse',     label: 'Full',         upper: false },
-  { key: 'smallStraight', label: 'Mały strit',   upper: false },
-  { key: 'largeStraight', label: 'Duży strit',   upper: false },
-  { key: 'yahtzee',       label: 'Generał',      upper: false },
-  { key: 'chance',        label: 'Szansa',       upper: false },
+  { key: 'ones',          label: 'Jedynki',     upper: true,  value: 1 },
+  { key: 'twos',          label: 'Dwójki',      upper: true,  value: 2 },
+  { key: 'threes',        label: 'Trójki',      upper: true,  value: 3 },
+  { key: 'fours',         label: 'Czwórki',     upper: true,  value: 4 },
+  { key: 'fives',         label: 'Piątki',      upper: true,  value: 5 },
+  { key: 'sixes',         label: 'Szóstki',     upper: true,  value: 6 },
+  { key: 'threeKind',     label: '3 jednakowe', upper: false },
+  { key: 'fourKind',      label: '4 jednakowe', upper: false },
+  { key: 'fullHouse',     label: 'Full',        upper: false },
+  { key: 'smallStraight', label: 'Mały strit',  upper: false },
+  { key: 'largeStraight', label: 'Duży strit',  upper: false },
+  { key: 'yahtzee',       label: 'Generał',     upper: false },
+  { key: 'chance',        label: 'Szansa',      upper: false },
 ];
 
 function diceCounts(dice) {
@@ -181,8 +394,7 @@ function diceCounts(dice) {
 function scoreFor(dice, key) {
   const cat = CATEGORIES.find(c => c.key === key);
   if (cat.upper) {
-    const c = diceCounts(dice);
-    return (c[cat.value] || 0) * cat.value;
+    return (diceCounts(dice)[cat.value] || 0) * cat.value;
   }
   const counts = diceCounts(dice);
   const sum    = dice.reduce((a, b) => a + b, 0);
@@ -193,17 +405,15 @@ function scoreFor(dice, key) {
     case 'threeKind': return vals.some(c => c >= 3) ? sum : 0;
     case 'fourKind':  return vals.some(c => c >= 4) ? sum : 0;
     case 'fullHouse': {
-      const sortedVals = [...vals].sort();
-      return (sortedVals.length === 2 && sortedVals[0] === 2 && sortedVals[1] === 3) ? 25 : 0;
+      const sv = [...vals].sort();
+      return (sv.length === 2 && sv[0] === 2 && sv[1] === 3) ? 25 : 0;
     }
     case 'smallStraight':
-      return ['1234', '2345', '3456'].some(seq =>
+      return ['1234','2345','3456'].some(seq =>
         seq.split('').every(ch => uniqueSorted.includes(Number(ch)))
       ) ? 30 : 0;
-    case 'largeStraight': {
-      const s = uniqueSorted.join('');
-      return (s === '12345' || s === '23456') ? 40 : 0;
-    }
+    case 'largeStraight':
+      return (uniqueSorted.join('') === '12345' || uniqueSorted.join('') === '23456') ? 40 : 0;
     case 'yahtzee': return vals.some(c => c === 5) ? 50 : 0;
     case 'chance':  return sum;
     default: return 0;
@@ -221,10 +431,18 @@ function totalScore(card) {
 }
 
 // ── Stan ──────────────────────────────────────────────────────────────────────
-let myPlayer    = 0;   // 1..4 lub 0 (widz)
-let myIndex     = -1;
-let state       = { phase: 'waiting', dice: [1,1,1,1,1], held: [false,false,false,false,false], rollsLeft: 3, turnIndex: 0, players: [], scores: {} };
+let myPlayer      = 0;
+let myIndex       = -1;
 let myRestartVote = false;
+let state = {
+  phase: 'waiting',
+  dice: [1,1,1,1,1],
+  held: [false,false,false,false,false],
+  rollsLeft: 3,
+  turnIndex: 0,
+  players: [],
+  scores: {},
+};
 
 const socket = io('/kosci', { transports: ['websocket', 'polling'] });
 
@@ -233,22 +451,16 @@ socket.on('connect', () => { overlayMsg.textContent = 'Połączono. Czekanie na 
 socket.on('assigned', ({ player, playerIndex }) => {
   myPlayer = player;
   myIndex  = playerIndex;
-  if (player === 0) {
-    overlayMsg.textContent = 'Oglądasz jako widz.';
-    statusEl.textContent = 'Tryb widza';
-  } else {
-    overlayMsg.textContent = `Jesteś Graczem ${player}. Czekanie na innych / start gry…`;
-    statusEl.textContent = `Gracz ${player}`;
-  }
+  overlayMsg.textContent = player === 0
+    ? 'Oglądasz jako widz.'
+    : `Jesteś Graczem ${player}. Czekanie na start…`;
+  statusEl.textContent = player === 0 ? 'widz' : `Gracz ${player}`;
 });
 
 socket.on('lobby', ({ players, spectators }) => {
   if (state.phase === 'waiting') {
-    overlayMsg.textContent = `Gracze: ${players}/5 (min. 2) — czekanie…`;
+    overlayMsg.textContent = `Gracze: ${players}/5 (min. 2)`;
     startBtn.disabled = !(players >= 2 && myPlayer !== 0);
-  }
-  if (spectators > 0) {
-    statusEl.textContent += `  |  Widzowie: ${spectators}`;
   }
 });
 
@@ -265,6 +477,7 @@ socket.on('restart', (snap) => {
   myRestartVote = false;
   gameOverBox.style.display = 'none';
   overlay.classList.add('hidden');
+  updateRestartBtn(0);
   render();
 });
 
@@ -273,35 +486,32 @@ socket.on('game_over', ({ scores, totals, winnerIndex }) => {
   state.phase  = 'over';
   render();
   const winnerName = `Gracz ${winnerIndex + 1}`;
-  const lines = totals.map((t, i) => `Gracz ${i+1}: ${t.total} pkt`).join(' &nbsp;|&nbsp; ');
+  const lines = totals.map((t, i) => `Gracz ${i+1}: ${t.total} pkt`).join('  ·  ');
   gameOverBox.style.display = 'block';
-  gameOverBox.innerHTML = `🏆 Wygrywa ${winnerName}! <br><span style="color:#888;font-size:13px">${lines}</span>`;
+  gameOverBox.innerHTML = `🏆 Wygrywa ${winnerName}!<br><span style="color:#667;font-size:12px">${lines}</span>`;
 });
 
 socket.on('player_left', ({ player }) => {
   overlay.classList.remove('hidden');
-  overlayMsg.textContent = `Gracz ${player} wyszedł. Czekanie na nowego gracza…`;
+  overlayMsg.textContent = `Gracz ${player} wyszedł. Czekanie…`;
   startBtn.disabled = true;
 });
 
 socket.on('disconnect', () => {
   overlay.classList.remove('hidden');
-  overlayMsg.textContent = 'Rozłączono z serwerem. Odśwież stronę.';
+  overlayMsg.textContent = 'Rozłączono. Odśwież stronę.';
 });
-
-socket.on('invalid_move', () => {});
 
 // ── Rendering ──────────────────────────────────────────────────────────────────
 function pipPositions(n) {
-  const layouts = {
+  return {
     1: [[50,50]],
     2: [[28,28],[72,72]],
     3: [[28,28],[50,50],[72,72]],
     4: [[28,28],[28,72],[72,28],[72,72]],
     5: [[28,28],[28,72],[50,50],[72,28],[72,72]],
     6: [[28,25],[28,50],[28,75],[72,25],[72,50],[72,75]],
-  };
-  return layouts[n];
+  }[n];
 }
 function dieSVG(n) {
   const pips = pipPositions(n).map(([x,y]) => `<circle class="pip" cx="${x}" cy="${y}" r="9"/>`).join('');
@@ -329,63 +539,65 @@ function renderDice() {
 
 function updateTurnBanner() {
   if (state.phase === 'waiting') { turnBanner.textContent = ''; return; }
-  if (state.phase === 'over') { turnBanner.textContent = 'Koniec gry'; turnBanner.classList.remove('my-turn'); return; }
-  const t = state.turnIndex + 1;
+  if (state.phase === 'over')    { turnBanner.textContent = 'Koniec gry'; turnBanner.classList.remove('my-turn'); return; }
   if (isMyTurn()) {
-    turnBanner.textContent = '➤ Twoja tura — rzucaj i wybierz kategorię';
+    turnBanner.textContent = '➤ Twoja tura';
     turnBanner.classList.add('my-turn');
   } else {
-    turnBanner.textContent = `Tura: Gracz ${t}`;
+    turnBanner.textContent = `Tura: Gracz ${state.turnIndex + 1}`;
     turnBanner.classList.remove('my-turn');
   }
 }
 
 function updateRollBtn() {
-  rollBtn.disabled = !(isMyTurn() && state.rollsLeft > 0);
-  rollsLeftEl.textContent = state.phase === 'playing' ? `pozostałe rzuty: ${state.rollsLeft}/3` : '';
+  rollBtn.disabled  = !(isMyTurn() && state.rollsLeft > 0);
+  rollsLeftEl.textContent = state.phase === 'playing'
+    ? `${state.rollsLeft}/3 rzutów`
+    : '';
 }
 
 function renderTable() {
   const players = state.players;
-  if (players.length === 0) { tableWrap.innerHTML = ''; return; }
+  if (!players.length) { tableWrap.innerHTML = ''; return; }
 
-  let html = '<table><thead><tr id="player-names"><th class="label">Kategoria</th>';
+  let html = `<table>
+    <thead>
+      <tr id="player-names">
+        <th class="label">Kategoria</th>`;
   players.forEach((pid, i) => {
     const active = (state.phase === 'playing' && i === state.turnIndex) ? ' class="active-col"' : '';
-    const me = (i === myIndex) ? ' (Ty)' : '';
-    html += `<th${active}>Gracz ${i+1}${me}</th>`;
+    const me = (i === myIndex) ? '★' : '';
+    html += `<th${active}>G${i+1}${me}</th>`;
   });
-  html += '</tr></thead><tbody>';
+  html += `</tr></thead><tbody>`;
 
   const canPreview = state.phase === 'playing' && state.rollsLeft < 3;
 
-  CATEGORIES.forEach((cat) => {
+  CATEGORIES.forEach(cat => {
     html += `<tr><td class="label">${cat.label}</td>`;
     players.forEach((pid, i) => {
-      const card = state.scores[pid];
+      const card   = state.scores[pid];
       const filled = card && card[cat.key] !== null;
 
       if (filled) {
         if (cat.upper) {
-          const par   = cat.value * 3;
-          const delta = card[cat.key] - par;
+          const delta = card[cat.key] - cat.value * 3;
           const sign  = delta >= 0 ? '+' : '';
-          const dClass = delta >= 0 ? 'delta-pos' : 'delta-neg';
-          html += `<td class="filled">${card[cat.key]}<span class="${dClass}">${sign}${delta}</span></td>`;
+          const dc    = delta >= 0 ? 'delta-pos' : 'delta-neg';
+          html += `<td class="filled">${card[cat.key]}<span class="${dc}">${sign}${delta}</span></td>`;
         } else {
           html += `<td class="filled">${card[cat.key]}</td>`;
         }
       } else if (canPreview && isMyTurn() && i === myIndex) {
         const preview = scoreFor(state.dice, cat.key);
-        const cls = preview === 0 ? 'preview preview-zero' : 'preview';
+        const cls = 'preview' + (preview === 0 ? ' preview-zero' : '');
         if (cat.upper) {
-          const par   = cat.value * 3;
-          const delta = preview - par;
+          const delta = preview - cat.value * 3;
           const sign  = delta >= 0 ? '+' : '';
-          const dClass = delta >= 0 ? 'delta-pos' : 'delta-neg';
-          html += `<td class="${cls}" data-category="${cat.key}">${preview}<span class="${dClass}">${sign}${delta}</span></td>`;
+          const dc    = delta >= 0 ? 'delta-pos' : 'delta-neg';
+          html += `<td class="${cls}" data-cat="${cat.key}">${preview}<span class="${dc}">${sign}${delta}</span></td>`;
         } else {
-          html += `<td class="${cls}" data-category="${cat.key}">${preview}</td>`;
+          html += `<td class="${cls}" data-cat="${cat.key}">${preview}</td>`;
         }
       } else {
         html += `<td class="empty-other">—</td>`;
@@ -394,8 +606,7 @@ function renderTable() {
     html += '</tr>';
 
     if (cat.key === 'sixes') {
-      // Wiersz bonusu — pokazuje skumulowaną deltę względem progu 63
-      html += '<tr class="section-row"><td class="label">Bonus ≥63 → +35</td>';
+      html += `<tr class="section-row"><td class="label">Bonus ≥63→+35</td>`;
       players.forEach(pid => {
         const card       = state.scores[pid];
         const uSum       = upperSum(card);
@@ -405,33 +616,37 @@ function renderTable() {
 
         if (uSum >= 63) {
           html += `<td><span class="delta-pos">+35</span></td>`;
+        } else if (filledCats.length === 0) {
+          html += `<td><span class="delta-rem">cel:63</span></td>`;
         } else {
-          const remaining = 63 - uSum;
-          const sign      = cumDelta >= 0 ? '+' : '';
-          const dClass    = cumDelta >= 0 ? 'delta-pos' : 'delta-neg';
-          const deltaStr  = filledCats.length > 0 ? `<span class="${dClass}">${sign}${cumDelta}</span>` : '';
-          const remStr    = filledCats.length > 0 ? `<span class="delta-rem"> (brak ${remaining})</span>` : `<span class="delta-rem">cel: 63</span>`;
-          html += `<td>${deltaStr}${remStr}</td>`;
+          const sign  = cumDelta >= 0 ? '+' : '';
+          const dc    = cumDelta >= 0 ? 'delta-pos' : 'delta-neg';
+          const rem   = 63 - uSum;
+          html += `<td><span class="${dc}">${sign}${cumDelta}</span><span class="delta-rem"> (−${rem})</span></td>`;
         }
       });
-      html += '</tr>';
+      html += `</tr>`;
     }
   });
 
-  html += '</tbody><tfoot><tr><td class="label">SUMA</td>';
+  html += `</tbody><tfoot><tr><td class="label">SUMA</td>`;
   players.forEach(pid => {
-    const card = state.scores[pid];
-    html += `<td>${totalScore(card)}</td>`;
+    html += `<td>${totalScore(state.scores[pid])}</td>`;
   });
-  html += '</tr></tfoot></table>';
+  html += `</tr></tfoot></table>`;
 
   tableWrap.innerHTML = html;
 
   tableWrap.querySelectorAll('td.preview').forEach(td => {
-    td.addEventListener('click', () => {
-      socket.emit('score', { category: td.dataset.category });
-    });
+    td.addEventListener('click', () => socket.emit('score', { category: td.dataset.cat }));
   });
+}
+
+function updateRestartBtn(count) {
+  if (myPlayer === 0) { restartBtn.style.display = 'none'; return; }
+  restartBtn.style.display = 'block';
+  restartBtn.textContent = `↺ Restart (${count}/2)`;
+  restartBtn.classList.toggle('voted', myRestartVote);
 }
 
 function render() {
@@ -439,18 +654,26 @@ function render() {
   updateTurnBanner();
   updateRollBtn();
   renderTable();
+  const inGame = state.phase === 'playing' || state.phase === 'over';
+  updateRestartBtn(0);
 }
 
 // ── Akcje ──────────────────────────────────────────────────────────────────────
 rollBtn.addEventListener('click', () => {
-  if (rollBtn.disabled) return;
-  socket.emit('roll');
+  if (!rollBtn.disabled) socket.emit('roll');
 });
 
-// ── Home button ────────────────────────────────────────────────────────────────
-document.getElementById('home-btn').addEventListener('click', () => { window.location.href = '/'; });
+document.getElementById('home-btn').addEventListener('click', () => {
+  window.location.href = '/';
+});
 
-// ── Restart vote ───────────────────────────────────────────────────────────────
+// Restart — przycisk na ekranie (mobilny) + klawiatura R (desktop)
+restartBtn.addEventListener('click', () => {
+  if (myPlayer === 0) return;
+  myRestartVote = !myRestartVote;
+  socket.emit('restart_vote', { vote: myRestartVote });
+});
+
 document.addEventListener('keydown', e => {
   if (e.key.toLowerCase() === 'r' && myPlayer !== 0) {
     myRestartVote = !myRestartVote;
@@ -459,10 +682,7 @@ document.addEventListener('keydown', e => {
 });
 
 socket.on('restart_votes', ({ count }) => {
-  const el = document.getElementById('restart-status');
-  if (myPlayer === 0) return;
-  el.textContent = `restart: R  ${count}/2`;
-  el.style.color = myRestartVote ? '#4fc3f7' : '#666';
+  updateRestartBtn(count);
 });
 
 render();
