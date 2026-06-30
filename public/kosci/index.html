@@ -540,10 +540,14 @@ function isMyTurn() {
 
 function renderDice() {
   diceArea.innerHTML = '';
+  // Można trzymać tylko gdy moja tura i zostały jeszcze rzuty i już rzucono
   const canHold = isMyTurn() && state.rollsLeft < 3 && state.rollsLeft > 0;
+  // Wyszarzamy kości tylko gdy jeszcze nie rzucono w tej turze (rollsLeft === 3)
+  // — nie szarzejemy po 3 rzucie ani podczas tury przeciwnika (żeby widzieć jego kosci)
+  const dimDice = state.rollsLeft === 3;
   state.dice.forEach((val, i) => {
     const die = document.createElement('div');
-    die.className = 'die' + (state.held[i] ? ' held' : '') + (canHold ? '' : ' disabled');
+    die.className = 'die' + (state.held[i] ? ' held' : '') + (dimDice ? ' disabled' : '');
     die.innerHTML = dieSVG(val);
     die.addEventListener('click', () => {
       if (!canHold) return;
