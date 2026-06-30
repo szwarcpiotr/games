@@ -29,7 +29,7 @@
   .score-sep { color: #444; }
   .score-p2  { color: #ef5350; }
 
-  #canvas { border: 2px solid #333; border-radius: 12px; cursor: none;
+  #canvas { border: 2px solid #333; border-radius: 12px; cursor: none; touch-action: none;
     box-shadow: 0 0 40px rgba(79,195,247,0.15); display: block; }
 
   #home-btn {
@@ -41,6 +41,17 @@
     transition: background 0.2s, color 0.2s; z-index: 30;
   }
   #home-btn:hover { background: rgba(255,255,255,0.18); color: #fff; }
+
+  #lock-btn {
+    position: fixed; top: 16px; right: 16px;
+    background: rgba(255,255,255,0.08); border: 1px solid #333;
+    color: #aaa; font-size: 13px; padding: 0 12px; height: 40px;
+    border-radius: 8px; cursor: pointer; display: flex;
+    align-items: center; justify-content: center; gap: 5px;
+    transition: background 0.2s, color 0.2s, border-color 0.2s; z-index: 30;
+    letter-spacing: 1px; font-family: inherit; user-select: none;
+  }
+  #lock-btn:hover { background: rgba(255,255,255,0.14); }
 
   #overlay {
     position: fixed; inset: 0;
@@ -67,6 +78,7 @@
 <body>
 
 <button id="home-btn" title="Menu główne">⌂</button>
+<button id="lock-btn" title="Zablokuj mysz (L)">🔓 L</button>
 <div id="overlay">
   <h1>CYMBERGAJ</h1>
   <p id="overlay-msg">Łączenie z serwerem…</p>
@@ -90,6 +102,7 @@ const overlay = document.getElementById('overlay');
 const overlayMsg = document.getElementById('overlay-msg');
 const statusEl   = document.getElementById('status');
 const goalMsgEl  = document.getElementById('goal-msg');
+const lockBtn    = document.getElementById('lock-btn');
 
 const W = 900, H = 560;
 canvas.width  = W;
@@ -202,18 +215,78 @@ socket.on('disconnect', () => {
   overlayMsg.textContent = 'Rozłączono z serwerem. Odśwież stronę.';
 });
 
-// ── Input ──────────────────────────────────────────────────────────────────────
-canvas.addEventListener('mousemove', e => {
-  const rect  = canvas.getBoundingClientRect();
-  const scale = W / rect.width;
-  mousePos.x  = (e.clientX - rect.left) * scale;
-  mousePos.y  = (e.clientY - rect.top)  * scale;
+// ── Pointer Lock ───────────────────────────────────────────────────────────────
+let pointerLocked = false;
+let lockDx = 0, lockDy = 0;
+
+function updateLockUI() {
+  lockBtn.textContent = pointerLocked ? '🔒 L' : '🔓 L';
+  lockBtn.style.color = pointerLocked ? '#4fc3f7' : '#aaa';
+  lockBtn.style.borderColor = pointerLocked ? '#4fc3f7' : '#333';
+}
+
+canvas.addEventListener('click', () => {
+  if (!pointerLocked && myPlayer !== 0) canvas.requestPointerLock();
 });
 
-document.addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; });
-document.addEventListener('keyup',   e => { keys[e.key.toLowerCase()] = false; });
+document.addEventListener('pointerlockchange', () => {
+  pointerLocked = document.pointerLockElement === canvas;
+  updateLockUI();
+});
 
-// Wysyłaj input do serwera ~60Hz
+document.addEventListener('mousemove', e => {
+  if (pointerLocked) {
+    lockDx += e.movementX;
+    lockDy += e.movementY;
+  } else {
+    const rect  = canvas.getBoundingClientRect();
+    const scale = W / rect.width;
+    mousePos.x  = (e.clientX - rect.left) * scale;
+    mousePos.y  = (e.clientY - rect.top)  * scale;
+  }
+});
+
+document.addEventListener('keydown', e => {
+  keys[e.key.toLowerCase()] = true;
+  if (e.key.toLowerCase() === 'l' && myPlayer !== 0) {
+    if (!pointerLocked) canvas.requestPointerLock();
+    else document.exitPointerLock();
+  }
+  if (e.key.toLowerCase() === 'r' && myPlayer !== 0) {
+    myRestartVote = !myRestartVote;
+    socket.emit('restart_vote', { vote: myRestartVote });
+  }
+});
+document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+// ── Touch support ──────────────────────────────────────────────────────────────
+let activeTouchId = null;
+
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  if (activeTouchId !== null) return;
+  const t = e.changedTouches[0];
+  activeTouchId = t.identifier;
+  const rect  = canvas.getBoundingClientRect();
+  const scale = W / rect.width;
+  mousePos = { x: (t.clientX - rect.left) * scale, y: (t.clientY - rect.top) * scale };
+  prevMPos = { ...mousePos };
+}, { passive: false });
+
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const t = [...e.changedTouches].find(t => t.identifier === activeTouchId);
+  if (!t) return;
+  const rect  = canvas.getBoundingClientRect();
+  const scale = W / rect.width;
+  mousePos = { x: (t.clientX - rect.left) * scale, y: (t.clientY - rect.top) * scale };
+}, { passive: false });
+
+canvas.addEventListener('touchend', e => {
+  if ([...e.changedTouches].find(t => t.identifier === activeTouchId)) activeTouchId = null;
+}, { passive: false });
+
+// ── Wysyłaj input do serwera ~60Hz ────────────────────────────────────────────
 const INPUT_RATE = 1000 / 60;
 let lastInput = 0;
 
@@ -222,15 +295,16 @@ function sendInput() {
   if (now - lastInput < INPUT_RATE) return;
   lastInput = now;
 
-  if (myPlayer === 1) {
-    const dx = mousePos.x - prevMPos.x;
-    const dy = mousePos.y - prevMPos.y;
-    prevMPos = { ...mousePos };
-    socket.emit('input', { dx, dy });
-  } else if (myPlayer === 2) {
-    const dx = mousePos.x - prevMPos.x;
-    const dy = mousePos.y - prevMPos.y;
-    prevMPos = { ...mousePos };
+  if (myPlayer === 1 || myPlayer === 2) {
+    let dx, dy;
+    if (pointerLocked) {
+      dx = lockDx; dy = lockDy;
+      lockDx = 0;  lockDy = 0;
+    } else {
+      dx = mousePos.x - prevMPos.x;
+      dy = mousePos.y - prevMPos.y;
+      prevMPos = { ...mousePos };
+    }
     socket.emit('input', { dx, dy });
   }
 }
@@ -336,11 +410,11 @@ document.getElementById('home-btn').addEventListener('click', () => {
 let myRestartVote = false;
 let restartVotes  = 0;
 
-document.addEventListener('keydown', e => {
-  if (e.key.toLowerCase() === 'r' && myPlayer !== 0) {
-    myRestartVote = !myRestartVote;
-    socket.emit('restart_vote', { vote: myRestartVote });
-  }
+// Przycisk lock (klik)
+lockBtn.addEventListener('click', () => {
+  if (myPlayer === 0) return;
+  if (!pointerLocked) canvas.requestPointerLock();
+  else document.exitPointerLock();
 });
 
 socket.on('restart_votes', ({ count }) => {
