@@ -83,13 +83,21 @@
     white-space: nowrap;
   }
 
-  /* ── Mobile portrait: canvas wypełnia ekran poziomo, gracz zawsze na dole ── */
+  /* ── Mobile portrait: canvas obrócony 90° ────────────────── */
   @media (orientation: portrait) {
-    body { justify-content: flex-end; padding-bottom: 12px; }
-    #score { margin-bottom: 8px; font-size: 32px; gap: 48px; }
-    /* ukrywamy lock btn na mobile (nie ma myszy) */
+    body { gap: 10px; justify-content: center; }
+    #score { font-size: 28px; gap: 40px; margin-bottom: 0; }
     #lock-btn { display: none; }
     #status-bar { font-size: 11px !important; }
+    #canvas-wrapper {
+      width: 100vw;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      /* wysokość = szerokość ekranu (bo canvas obrócony o 90°) */
+      height: 100vw;
+      overflow: hidden;
+    }
   }
 </style>
 </head>
@@ -107,7 +115,7 @@
   <span class="score-sep">:</span>
   <span class="score-p2" id="s2">0</span>
 </div>
-<canvas id="canvas"></canvas>
+<div id="canvas-wrapper"><canvas id="canvas"></canvas></div>
 <div id="status-bar" style="margin-top:10px;font-size:13px;color:#666;letter-spacing:1px;display:flex;gap:24px;align-items:center;justify-content:center;min-height:20px;">
   <span id="status"></span><span id="restart-status" style="color:#888"></span>
 </div>
@@ -172,28 +180,40 @@ function prebakeTable() {
 prebakeTable();
 
 // ── Resize / orientacja ───────────────────────────────────────────────────────
-let canvasRect = canvas.getBoundingClientRect(); // cache — odświeżany przy resize
+let canvasRect = { left:0, top:0, width:1, height:1 };
+let isPortrait = false;
+// Kierunek obrotu zależy od gracza: gracz 1 = 90° (jego mallet na dole ekranu)
+//                                   gracz 2 = -90° (jego mallet na dole ekranu)
+// Domyślnie 90° — aktualizowane po 'assigned'
+let rotationDeg = 90;
 
 function resize() {
-  const portrait = window.innerHeight > window.innerWidth;
-  let scale;
-  if (portrait) {
-    // Pionowo: canvas zajmuje pełną szerokość, max 60% wysokości
-    scale = Math.min(
-      (window.innerWidth - 8) / W,
-      (window.innerHeight * 0.62) / H
-    );
+  isPortrait = window.innerHeight > window.innerWidth;
+
+  if (isPortrait) {
+    // W portrait obracamy canvas o 90°.
+    // Canvas ma wymiary W×H (900×560). Po obrocie zajmuje H×W pikseli CSS.
+    // Chcemy żeby H (po obrocie = nowa szerokość) = szerokość ekranu.
+    const scale = (window.innerWidth - 8) / H;
+    // Ustawiamy rozmiar CSS canvasa (przed transformem)
+    canvas.style.width  = (W * scale) + 'px';
+    canvas.style.height = (H * scale) + 'px';
+    canvas.style.transform = `rotate(${rotationDeg}deg)`;
+    // Wrapper musi mieć wysokość = W*scale (bo po obrocie canvas zajmuje W*scale w pionie)
+    document.getElementById('canvas-wrapper').style.height = (W * scale) + 'px';
   } else {
-    scale = Math.min(1, (window.innerWidth - 20) / W, (window.innerHeight - 140) / H);
+    const scale = Math.min(1, (window.innerWidth - 20) / W, (window.innerHeight - 140) / H);
+    canvas.style.width  = (W * scale) + 'px';
+    canvas.style.height = (H * scale) + 'px';
+    canvas.style.transform = '';
+    document.getElementById('canvas-wrapper').style.height = '';
   }
-  canvas.style.width  = (W * scale) + 'px';
-  canvas.style.height = (H * scale) + 'px';
-  // Opóźnij cache rect żeby layout zdążył się przeliterzyć
+
   requestAnimationFrame(() => { canvasRect = canvas.getBoundingClientRect(); });
 }
 resize();
 window.addEventListener('resize', resize);
-screen.orientation?.addEventListener('change', () => setTimeout(resize, 100));
+screen.orientation?.addEventListener('change', () => setTimeout(resize, 150));
 
 // ── Stan gry ──────────────────────────────────────────────────────────────────
 let myPlayer = 0;
@@ -210,16 +230,33 @@ let pointerLocked = false;
 let lockDx = 0, lockDy = 0;
 let activeTouchId = null;
 
-// Czy gracz jest na "górze" logiki gry (gracz 2 gra od prawej — na telefonie flip)
-// Na telefonie zawsze chcemy żeby palec był na dole = blisko siebie
-// Gracz 1 gra od lewej (x < W/2), gracz 2 od prawej (x > W/2)
-// W portrait: canvas jest normalnie — gracz 1 ma mallet po lewej, gracz 2 po prawej
-// Obaj widzą pole z tej samej perspektywy, ale to OK bo stół jest symetryczny
+// Przelicza punkt ekranu (clientX/Y) na współrzędne gry (0..W, 0..H)
+// W portrait canvas jest obrócony CSS-em, więc trzeba odwrócić transformację
 function pointerToGame(clientX, clientY) {
-  const scale = W / canvasRect.width;
+  // Środek canvasa w przestrzeni ekranu
+  const cx = canvasRect.left + canvasRect.width  / 2;
+  const cy = canvasRect.top  + canvasRect.height / 2;
+  // Wektor od środka do punktu dotyku
+  let dx = clientX - cx;
+  let dy = clientY - cy;
+
+  if (isPortrait) {
+    // Odwróć obrót CSS: jeśli canvas obrócono o rotationDeg, cofamy o -rotationDeg
+    const rad = -rotationDeg * Math.PI / 180;
+    const cos = Math.cos(rad), sin = Math.sin(rad);
+    const rdx = dx * cos - dy * sin;
+    const rdy = dx * sin + dy * cos;
+    dx = rdx; dy = rdy;
+  }
+
+  // Przelicz z CSS-pikseli na piksele gry
+  // canvasRect.width/height to wymiary CSS po transformie (po obrocie width<->height)
+  const scaleX = isPortrait ? (W / canvasRect.height) : (W / canvasRect.width);
+  const scaleY = isPortrait ? (H / canvasRect.width)  : (H / canvasRect.height);
+
   return {
-    x: (clientX - canvasRect.left) * scale,
-    y: (clientY - canvasRect.top)  * scale,
+    x: W/2 + dx * scaleX,
+    y: H/2 + dy * scaleY,
   };
 }
 
@@ -294,12 +331,17 @@ socket.on('connect', () => { overlayMsg.textContent = 'Połączono. Czekanie na 
 
 socket.on('assigned', ({ player }) => {
   myPlayer = player;
+  // Gracz 1: mallet po lewej (x<W/2) → obracamy 90° → jego mallet na dole ekranu
+  // Gracz 2: mallet po prawej (x>W/2) → obracamy -90° → jego mallet na dole ekranu
+  rotationDeg = (player === 2) ? -90 : 90;
+  resize(); // przelicz obrót po poznaniu gracza
+
   if (player === 1) {
     overlayMsg.textContent = 'Jesteś Graczem 1 (niebieski). Czekanie na przeciwnika…';
-    statusEl.textContent = 'Sterowanie: mysz';
+    statusEl.textContent = 'Sterowanie: mysz/dotyk';
   } else if (player === 2) {
     overlayMsg.textContent = 'Jesteś Graczem 2 (czerwony). Czekanie na przeciwnika…';
-    statusEl.textContent = 'Sterowanie: mysz';
+    statusEl.textContent = 'Sterowanie: mysz/dotyk';
   } else {
     overlayMsg.textContent = 'Oglądasz jako widz.';
     statusEl.textContent = 'Tryb widza';
