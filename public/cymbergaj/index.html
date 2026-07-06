@@ -35,6 +35,28 @@
     transition:background 0.2s,color 0.2s,border-color 0.2s; z-index:30;
     letter-spacing:1px; font-family:inherit; user-select:none; }
   #lock-btn:hover { background:rgba(255,255,255,0.14); }
+  #restart-btn {
+    display: none;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid #333;
+    color: #666;
+    font-family: inherit;
+    font-size: 12px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    touch-action: manipulation;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+    min-height: 36px;
+  }
+  #restart-btn.voted {
+    border-color: #4fc3f7;
+    color: #4fc3f7;
+    background: rgba(79,195,247,0.1);
+  }
+  #restart-btn:active { background: rgba(255,255,255,0.12); }
   #overlay { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center;
     justify-content:center; background:rgba(0,0,0,0.82); font-size:22px; gap:16px; z-index:10; }
   #overlay h1 { font-size:48px; letter-spacing:6px; color:#4fc3f7; }
@@ -66,7 +88,7 @@
 </div>
 <div id="canvas-wrapper"><canvas id="canvas"></canvas></div>
 <div id="status-bar" style="margin-top:10px;font-size:13px;color:#666;letter-spacing:1px;display:flex;gap:24px;align-items:center;justify-content:center;min-height:20px;">
-  <span id="status"></span><span id="restart-status" style="color:#888"></span>
+  <span id="status"></span><button id="restart-btn" title="Głosuj restart (R)">↺ Restart (0/2)</button>
 </div>
 <div id="goal-msg"></div>
 <script src="/socket.io/socket.io.js"></script>
@@ -90,7 +112,7 @@ const goalMsgEl=document.getElementById('goal-msg');
 const lockBtn=document.getElementById('lock-btn');
 const s1El=document.getElementById('s1');
 const s2El=document.getElementById('s2');
-const restartEl=document.getElementById('restart-status');
+const restartBtn=document.getElementById('restart-btn');
 canvas.width=W; canvas.height=H;
 
 const tableCanvas=new OffscreenCanvas(W,H);
@@ -243,10 +265,32 @@ document.addEventListener('pointerlockchange',()=>{
 lockBtn.addEventListener('click',()=>{ if(myPlayer===0) return; pointerLocked?document.exitPointerLock():canvas.requestPointerLock(); });
 
 let myRestartVote=false;
+
+// Przycisk na ekranie (telefon) — z jasnych przyczyn nie da się tam wcisnąć R.
+// Zrobione tak jak w kościach: pokazuje się tylko graczom, licznik głosów X/2,
+// podświetla się gdy zagłosowaliśmy.
+function updateRestartBtn(count){
+  if(myPlayer===0){ restartBtn.style.display='none'; return; }
+  restartBtn.style.display='inline-flex';
+  restartBtn.textContent=`↺ Restart (${count}/2)`;
+  restartBtn.classList.toggle('voted', myRestartVote);
+}
+
+function toggleRestartVote(){
+  if(myPlayer===0) return;
+  myRestartVote=!myRestartVote;
+  socket.emit('restart_vote',{vote:myRestartVote});
+  updateRestartBtn(lastRestartCount);
+}
+
+let lastRestartCount=0;
+
+restartBtn.addEventListener('click', toggleRestartVote);
+
 document.addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();
   if(k==='l'&&myPlayer!==0){ pointerLocked?document.exitPointerLock():canvas.requestPointerLock(); }
-  if(k==='r'&&myPlayer!==0){ myRestartVote=!myRestartVote; socket.emit('restart_vote',{vote:myRestartVote}); }
+  if(k==='r'&&myPlayer!==0){ toggleRestartVote(); }
 });
 
 const socket=io({transports:['websocket']});
@@ -256,6 +300,7 @@ socket.on('assigned',({player})=>{
   rotationDeg=(player===2)?90:-90;
   resize();
   resetPredicted();
+  updateRestartBtn(0);
   if(player===1){ overlayMsg.textContent='Jesteś Graczem 1 (niebieski). Czekanie na przeciwnika…'; statusEl.textContent='Sterowanie: mysz/dotyk'; }
   else if(player===2){ overlayMsg.textContent='Jesteś Graczem 2 (czerwony). Czekanie na przeciwnika…'; statusEl.textContent='Sterowanie: mysz/dotyk'; }
   else { overlayMsg.textContent='Oglądasz jako widz.'; statusEl.textContent='Tryb widza'; }
@@ -268,7 +313,7 @@ socket.on('start',({score})=>{
   state.score=score; s1El.textContent=score.p1; s2El.textContent=score.p2;
   overlay.classList.add('hidden');
   resetPredicted();
-  if(myPlayer!==0) restartEl.textContent='restart: R  0/2';
+  if(myPlayer!==0) updateRestartBtn(0);
 });
 socket.on('state',(snap)=>{
   state=snap;
@@ -290,8 +335,8 @@ socket.on('goal',({who,score})=>{
 socket.on('resume',()=>{ resetPredicted(); });
 socket.on('player_left',({player})=>{ overlay.classList.remove('hidden'); overlayMsg.textContent=`Gracz ${player} wyszedł. Czekanie na nowego gracza…`; });
 socket.on('disconnect',()=>{ overlay.classList.remove('hidden'); overlayMsg.textContent='Rozłączono z serwerem. Odśwież stronę.'; });
-socket.on('restart_votes',({count})=>{ if(myPlayer===0) return; restartEl.textContent=`restart: R  ${count}/2`; restartEl.style.color=myRestartVote?'#4fc3f7':'#666'; });
-socket.on('restart',()=>{ myRestartVote=false; restartEl.textContent='restart: R  0/2'; resetPredicted(); });
+socket.on('restart_votes',({count})=>{ lastRestartCount=count; updateRestartBtn(count); });
+socket.on('restart',()=>{ myRestartVote=false; resetPredicted(); updateRestartBtn(0); });
 
 function drawMallet(mx,my,color,darkColor,glowColor,isMe){
   const g=ctx.createRadialGradient(mx,my,0,mx,my,MALLET_R*2.5);
