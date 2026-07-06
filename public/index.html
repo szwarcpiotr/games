@@ -41,7 +41,6 @@
     transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
     text-decoration: none;
     display: block;
-    /* tap feedback on mobile */
     -webkit-tap-highlight-color: transparent;
   }
   .card:hover {
@@ -99,7 +98,7 @@
     white-space: nowrap;
   }
 
-  /* Mobile: układ poziomy (podgląd + info obok siebie) dla oszczędności miejsca */
+  /* Mobile: układ poziomy */
   @media (max-width: 480px) {
     body { padding: 24px 12px; }
 
@@ -136,7 +135,7 @@
     }
   }
 
-  /* Desktop: 3 kolumny, oryginalne rozmiary */
+  /* Desktop: 3 kolumny */
   @media (min-width: 768px) {
     body { padding: 48px 32px; }
 
@@ -162,6 +161,7 @@
 <h1>🎮 Gry</h1>
 
 <div class="grid">
+
   <a class="card" href="/cymbergaj">
     <div class="card-inner">
       <canvas class="card-preview" id="preview-cymbergaj"></canvas>
@@ -194,12 +194,26 @@
       <div class="card-info">
         <div class="card-text">
           <div class="card-title">Kości</div>
-          <div class="card-desc">Yahtzee dla 2-5 graczy</div>
+          <div class="card-desc">Yahtzee dla 2–5 graczy</div>
         </div>
-        <span class="card-badge">2-5 graczy • online</span>
+        <span class="card-badge">2–5 graczy • online</span>
       </div>
     </div>
   </a>
+
+  <a class="card" href="/chinczyk">
+    <div class="card-inner">
+      <canvas class="card-preview" id="preview-chinczyk"></canvas>
+      <div class="card-info">
+        <div class="card-text">
+          <div class="card-title">Chińczyk</div>
+          <div class="card-desc">Klasyczna gra dla 2–4 graczy</div>
+        </div>
+        <span class="card-badge">2–4 graczy • online</span>
+      </div>
+    </div>
+  </a>
+
 </div>
 
 <script>
@@ -213,12 +227,11 @@ function setupPreviewCanvas(canvas, drawFn) {
     const w = canvas.clientWidth;
     const h = canvas.clientHeight;
     if (w === 0 || h === 0) return;
-    if (w === lastW && h === lastH) return; // unikaj zbędnych przerysowań
+    if (w === lastW && h === lastH) return;
     lastW = w; lastH = h;
-
     canvas.width  = w * dpr;
     canvas.height = h * dpr;
-    ctx.setTransform(1, 0, 0, 1, 0, 0); // reset transformacji przed ponownym scale
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, w, h);
     drawFn(ctx, w, h);
@@ -229,7 +242,7 @@ function setupPreviewCanvas(canvas, drawFn) {
   draw();
 }
 
-// ── Miniaturka cymbergaja ──────────────────────────────────────────────────────
+// ── Miniaturka cymbergaja ─────────────────────────────────────────────────────
 setupPreviewCanvas(document.getElementById('preview-cymbergaj'), (ctx, W, H) => {
   const sx = W / 900, sy = H / 560;
   const PUCK_R = 14*sx, MALLET_R = 28*sx;
@@ -260,7 +273,7 @@ setupPreviewCanvas(document.getElementById('preview-cymbergaj'), (ctx, W, H) => 
   drawPuck(W/2,H/2);
 });
 
-// ── Miniaturka warcabów ────────────────────────────────────────────────────────
+// ── Miniaturka warcabów ───────────────────────────────────────────────────────
 setupPreviewCanvas(document.getElementById('preview-warcaby'), (ctx, W, H) => {
   const CELL = W / 8;
   for (let r=0;r<8;r++) for (let c=0;c<8;c++) {
@@ -278,7 +291,7 @@ setupPreviewCanvas(document.getElementById('preview-warcaby'), (ctx, W, H) => {
   }
 });
 
-// ── Miniaturka kości ───────────────────────────────────────────────────────────
+// ── Miniaturka kości ──────────────────────────────────────────────────────────
 setupPreviewCanvas(document.getElementById('preview-kosci'), (ctx, W, H) => {
   ctx.fillStyle = '#0d1f1a'; ctx.fillRect(0,0,W,H);
 
@@ -303,7 +316,107 @@ setupPreviewCanvas(document.getElementById('preview-kosci'), (ctx, W, H) => {
   drawDie(W*.28,H*.5,size,5,-0.12);
   drawDie(W*.52,H*.42,size,3,0.08);
   drawDie(W*.75,H*.55,size,6,-0.05);
-})();
+});
+
+// ── Miniaturka chińczyka ──────────────────────────────────────────────────────
+setupPreviewCanvas(document.getElementById('preview-chinczyk'), (ctx, W, H) => {
+  ctx.fillStyle = '#0a0a0f';
+  ctx.fillRect(0, 0, W, H);
+
+  const S    = Math.min(W, H);
+  const offX = (W - S) / 2;
+  const offY = (H - S) / 2;
+  const C    = S / 11;
+  const R    = C * 0.32;
+
+  ctx.save();
+  ctx.translate(offX, offY);
+
+  // Trasa — uproszczona, tylko ramka krzyża
+  const path = [
+    [6,10],[6,9],[6,8],[6,7],[6,6],
+    [6,5],[7,5],[8,5],[9,5],[10,5],
+    [10,4],[10,3],[10,2],[10,1],[10,0],
+    [9,0],[8,0],[7,0],[6,0],[5,0],
+    [4,0],[4,1],[4,2],[4,3],[4,4],
+    [4,5],[3,5],[2,5],[1,5],[0,5],
+    [0,6],[0,7],[0,8],[0,9],[0,10],
+    [1,10],[2,10],[3,10],[4,10],[5,10],
+  ];
+
+  // Tło pól
+  path.forEach(([col,row]) => {
+    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+    ctx.beginPath();
+    ctx.roundRect(col*C+1, row*C+1, C-2, C-2, 3);
+    ctx.fill();
+  });
+
+  // Kolorowe pola startowe
+  const starts = [[0,'#ff4444'],[10,'#4fc3f7'],[20,'#ffd740'],[30,'#69f0ae']];
+  starts.forEach(([idx, clr]) => {
+    const [col,row] = path[idx];
+    ctx.fillStyle = clr + '55';
+    ctx.strokeStyle = clr;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.roundRect(col*C+1,row*C+1,C-2,C-2,3); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(col*C+1.5,row*C+1.5,C-3,C-3,3); ctx.stroke();
+  });
+
+  // Bazy (rogi)
+  const bases = [
+    { color:'#ff4444', cols:[8,9], rows:[8,9] },
+    { color:'#4fc3f7', cols:[8,9], rows:[1,2] },
+    { color:'#ffd740', cols:[1,2], rows:[1,2] },
+    { color:'#69f0ae', cols:[1,2], rows:[8,9] },
+  ];
+  bases.forEach(({ color, cols, rows }) => {
+    for (const col of cols) for (const row of rows) {
+      ctx.beginPath();
+      ctx.arc(col*C+C/2, row*C+C/2, R, 0, Math.PI*2);
+      ctx.fillStyle = color + '55';
+      ctx.fill();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+  });
+
+  // Centrum — 4 trójkąty
+  const cx = S/2, cy = S/2;
+  const colors4 = ['#ff4444','#4fc3f7','#ffd740','#69f0ae'];
+  colors4.forEach((clr, i) => {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(i * Math.PI / 2);
+    ctx.beginPath();
+    ctx.moveTo(0, -C*0.7);
+    ctx.lineTo(-C*0.55, C*0.15);
+    ctx.lineTo(C*0.55, C*0.15);
+    ctx.closePath();
+    ctx.fillStyle = clr + '66';
+    ctx.fill();
+    ctx.restore();
+  });
+
+  // Kilka pionków dla klimatu
+  const demopieces = [
+    { x: path[3][0], y: path[3][1], c: '#ff4444' },
+    { x: path[13][0],y: path[13][1],c: '#4fc3f7' },
+    { x: path[23][0],y: path[23][1],c: '#ffd740' },
+    { x: path[33][0],y: path[33][1],c: '#69f0ae' },
+  ];
+  demopieces.forEach(({ x, y, c }) => {
+    const px = x*C+C/2, py = y*C+C/2;
+    const g = ctx.createRadialGradient(px-R*.3,py-R*.3,1,px,py,R);
+    g.addColorStop(0,'#fff'); g.addColorStop(.4,c); g.addColorStop(1,'rgba(0,0,0,0.5)');
+    ctx.beginPath(); ctx.arc(px,py,R,0,Math.PI*2);
+    ctx.fillStyle = g; ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth=1; ctx.stroke();
+  });
+
+  ctx.restore();
+});
 </script>
 </body>
 </html>
