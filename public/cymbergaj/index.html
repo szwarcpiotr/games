@@ -75,6 +75,12 @@ const W=900,H=560,PUCK_R=14,MALLET_R=28,GOAL_W=130;
 const GOAL_TOP=(H-GOAL_W)/2,GOAL_BOT=(H+GOAL_W)/2;
 const M1_DARK='rgb(39,122,159)',M2_DARK='rgb(119,41,40)';
 
+// Muszą być identyczne jak stałe fizyki na serwerze (server.js) — używane do
+// lokalnej predykcji pozycji własnego odbijaka (patrz niżej: `predicted`).
+const MAX_MALLET_V = 18;
+const P1_MAX_X = W/2 - MALLET_R - 5;
+const P2_MIN_X = W/2 + MALLET_R + 5;
+
 const canvas=document.getElementById('canvas');
 const ctx=canvas.getContext('2d',{alpha:false});
 const overlay=document.getElementById('overlay');
@@ -128,12 +134,44 @@ screen.orientation?.addEventListener('change',()=>setTimeout(resize,150));
 let myPlayer=0;
 let state={puck:{x:W/2,y:H/2,vx:0,vy:0},m1:{x:88,y:H/2},m2:{x:W-88,y:H/2},score:{p1:0,p2:0}};
 
+// ── Lokalna predykcja pozycji WŁASNEGO odbijaka ─────────────────────────────
+// Problem, który to rozwiązuje: przy sterowaniu dotykiem liczyliśmy dx jako
+// "dystans od miejsca, w którym serwer ostatnio widział mój mallet, do palca"
+// i wysyłaliśmy to co drugą klatkę. Serwer tickuje 60x/s i za każdym razem
+// PONOWNIE stosuje ten sam zapisany input, więc zanim klient zdążył przeliczyć
+// nowy dx, serwer już zdążył doje chać do celu i przejechać dalej (podwójne
+// zastosowanie tego samego przesunięcia) — mallet przelatywał obok palca,
+// a kolejna korekta w drugą stronę też przelatywała obok — stąd krążenie.
+// Rozwiązanie: klient sam symuluje dokładnie tę samą fizykę ruchu (te same
+// stałe: MAX_MALLET_V, granice planszy) i liczy dx względem WŁASNEJ,
+// zawsze aktualnej predykcji — a nie względem spóźnionego stanu z serwera.
+// Autorytatywny stan z serwera tylko koryguje ewentualny dryf (patrz reconcile).
+let predicted={x:MALLET_R+60,y:H/2};
+
+function boundsFor(player){
+  return player===1
+    ? {minX:MALLET_R,   maxX:P1_MAX_X,      minY:MALLET_R, maxY:H-MALLET_R}
+    : {minX:P2_MIN_X,   maxX:W-MALLET_R,    minY:MALLET_R, maxY:H-MALLET_R};
+}
+
+function resetPredicted(){
+  if(myPlayer===1) predicted={x:MALLET_R+60,   y:H/2};
+  else if(myPlayer===2) predicted={x:W-MALLET_R-60, y:H/2};
+}
+
+function reconcile(serverPos){
+  // Drobny dryf (np. utracona ramka) korygujemy w milczeniu; duży błąd
+  // (np. tuż po starcie/restarcie) zatwierdzamy od razu na pozycji serwera.
+  const err=Math.hypot(serverPos.x-predicted.x, serverPos.y-predicted.y);
+  if(err>6){ predicted.x=serverPos.x; predicted.y=serverPos.y; }
+}
+
 let mouseX=0,mouseY=0,prevX=0,prevY=0;
 let pointerLocked=false,lockDx=0,lockDy=0;
 
 // ── TOUCH: absolutna pozycja celu ────────────────────────────────────────────
 // Zamiast delta palca (która wzmacnia ruch), pamiętamy dokładną pozycję palca
-// w układzie gry. Co klatkę: dx = palec.x − mallet.x (ze stanu serwera).
+// w układzie gry. Co klatkę: dx = palec.x − (lokalnie przewidywana pozycja malleta).
 // Gdy mallet dobiega do celu, delta maleje do 0 — brak dryfu, proporcjonalna prędkość.
 let touchTarget=null; // {x,y} w przestrzeni gry lub null gdy palec uniesiony
 let activeTouchId=null;
@@ -208,6 +246,7 @@ socket.on('assigned',({player})=>{
   myPlayer=player;
   rotationDeg=(player===2)?90:-90;
   resize();
+  resetPredicted();
   if(player===1){ overlayMsg.textContent='Jesteś Graczem 1 (niebieski). Czekanie na przeciwnika…'; statusEl.textContent='Sterowanie: mysz/dotyk'; }
   else if(player===2){ overlayMsg.textContent='Jesteś Graczem 2 (czerwony). Czekanie na przeciwnika…'; statusEl.textContent='Sterowanie: mysz/dotyk'; }
   else { overlayMsg.textContent='Oglądasz jako widz.'; statusEl.textContent='Tryb widza'; }
@@ -219,10 +258,13 @@ socket.on('lobby',({players,spectators})=>{
 socket.on('start',({score})=>{
   state.score=score; s1El.textContent=score.p1; s2El.textContent=score.p2;
   overlay.classList.add('hidden');
+  resetPredicted();
   if(myPlayer!==0) restartEl.textContent='restart: R  0/2';
 });
 socket.on('state',(snap)=>{
   state=snap;
+  if(myPlayer===1) reconcile(snap.m1);
+  else if(myPlayer===2) reconcile(snap.m2);
   if(s1El.textContent!=snap.score.p1) s1El.textContent=snap.score.p1;
   if(s2El.textContent!=snap.score.p2) s2El.textContent=snap.score.p2;
 });
@@ -233,10 +275,11 @@ socket.on('goal',({who,score})=>{
   goalMsgEl.style.opacity='1';
   setTimeout(()=>{ goalMsgEl.style.opacity='0'; },1800);
 });
+socket.on('resume',()=>{ resetPredicted(); });
 socket.on('player_left',({player})=>{ overlay.classList.remove('hidden'); overlayMsg.textContent=`Gracz ${player} wyszedł. Czekanie na nowego gracza…`; });
 socket.on('disconnect',()=>{ overlay.classList.remove('hidden'); overlayMsg.textContent='Rozłączono z serwerem. Odśwież stronę.'; });
 socket.on('restart_votes',({count})=>{ if(myPlayer===0) return; restartEl.textContent=`restart: R  ${count}/2`; restartEl.style.color=myRestartVote?'#4fc3f7':'#666'; });
-socket.on('restart',()=>{ myRestartVote=false; restartEl.textContent='restart: R  0/2'; });
+socket.on('restart',()=>{ myRestartVote=false; restartEl.textContent='restart: R  0/2'; resetPredicted(); });
 
 function drawMallet(mx,my,color,darkColor,glowColor,isMe){
   const g=ctx.createRadialGradient(mx,my,0,mx,my,MALLET_R*2.5);
@@ -276,16 +319,26 @@ function loop(){
   requestAnimationFrame(loop);
   frameCount++;
 
-  if(frameCount%2===0&&(myPlayer===1||myPlayer===2)){
+  if(myPlayer===1||myPlayer===2){
     let dx,dy;
 
     if(touchTarget!==null){
-      const mallet=myPlayer===1?state.m1:state.m2;
-      dx=touchTarget.x-mallet.x;
-      dy=touchTarget.y-mallet.y;
+      dx=touchTarget.x-predicted.x;
+      dy=touchTarget.y-predicted.y;
       // Martwa strefa: wyślij jawne zero żeby serwer zatrzymał mallet.
       // Samo pominięcie wysyłki nie działa — serwer ciągle aplikuje ostatni input.
       if(Math.abs(dx)<1&&Math.abs(dy)<1){ dx=0; dy=0; }
+
+      // Przesuń naszą lokalną predykcję DOKŁADNIE tak, jak zrobi to serwer
+      // (ten sam clamp prędkości i te same granice planszy). Dzięki temu
+      // kolejny dx liczymy względem miejsca, w którym mallet NAPRAWDĘ będzie,
+      // a nie względem spóźnionego stanu z serwera — to eliminuje krążenie.
+      const len=Math.hypot(dx,dy);
+      let cdx=dx, cdy=dy;
+      if(len>MAX_MALLET_V){ cdx=dx/len*MAX_MALLET_V; cdy=dy/len*MAX_MALLET_V; }
+      const b=boundsFor(myPlayer);
+      predicted.x=Math.max(b.minX,Math.min(b.maxX,predicted.x+cdx));
+      predicted.y=Math.max(b.minY,Math.min(b.maxY,predicted.y+cdy));
     } else if(pointerLocked){
       dx=lockDx; dy=lockDy; lockDx=0; lockDy=0;
     } else {
