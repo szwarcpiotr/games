@@ -23,11 +23,15 @@ app.get('/warcaby', (req, res) => {
 app.get('/kosci', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'kosci', 'index.html'));
 });
+app.get('/chinczyk', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'chinczyk', 'index.html'));
+});
 
 // ── Rejestracja logiki każdej gry (fizyka, walidacja, socket.io) ────────────
 require('./server/cymbergaj')(io);
 require('./server/warcaby')(io);
 require('./server/kosci')(io);
+require('./server/chinczyk')(io);
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
