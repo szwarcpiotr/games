@@ -160,10 +160,19 @@ function resetPredicted(){
 }
 
 function reconcile(serverPos){
-  // Drobny dryf (np. utracona ramka) korygujemy w milczeniu; duży błąd
-  // (np. tuż po starcie/restarcie) zatwierdzamy od razu na pozycji serwera.
+  // WAŻNE: korygujemy TYLKO przy naprawdę dużym rozjeździe (np. zerwane i
+  // wznowione połączenie) — i to wywołanie (patrz niżej) odpala się TYLKO gdy
+  // palec nie jest aktualnie przyłożony do ekranu. Poprzednia wersja miała
+  // mały próg (6px) i poprawiała pozycję przy KAŻDYM pakiecie 'state' — ale
+  // stan z serwera na prawdziwym telefonie (realne opóźnienie sieci, którego
+  // nie widać przy testach w tej samej maszynie/emulatorze) jest zawsze nieco
+  // spóźniony względem lokalnej predykcji. Efekt: predicted był bezustannie
+  // cofany do starszej, spóźnionej pozycji, przez co następna klatka liczyła
+  // duży skok do przodu — i tak w kółko. To właśnie powodowało krążenie w
+  // miejscu i drganie lewo-prawo przy ruchu. Duży próg + korekta tylko w
+  // spoczynku eliminuje ten efekt, zachowując ochronę przed realnym dryfem.
   const err=Math.hypot(serverPos.x-predicted.x, serverPos.y-predicted.y);
-  if(err>6){ predicted.x=serverPos.x; predicted.y=serverPos.y; }
+  if(err>40){ predicted.x=serverPos.x; predicted.y=serverPos.y; }
 }
 
 let mouseX=0,mouseY=0,prevX=0,prevY=0;
@@ -263,8 +272,11 @@ socket.on('start',({score})=>{
 });
 socket.on('state',(snap)=>{
   state=snap;
-  if(myPlayer===1) reconcile(snap.m1);
-  else if(myPlayer===2) reconcile(snap.m2);
+  // Reconcile tylko gdy nie trzymamy właśnie palca na ekranie — patrz komentarz w reconcile().
+  if(touchTarget===null){
+    if(myPlayer===1) reconcile(snap.m1);
+    else if(myPlayer===2) reconcile(snap.m2);
+  }
   if(s1El.textContent!=snap.score.p1) s1El.textContent=snap.score.p1;
   if(s2El.textContent!=snap.score.p2) s2El.textContent=snap.score.p2;
 });
@@ -327,7 +339,9 @@ function loop(){
       dy=touchTarget.y-predicted.y;
       // Martwa strefa: wyślij jawne zero żeby serwer zatrzymał mallet.
       // Samo pominięcie wysyłki nie działa — serwer ciągle aplikuje ostatni input.
-      if(Math.abs(dx)<1&&Math.abs(dy)<1){ dx=0; dy=0; }
+      // Próg trochę większy niż 1px — prawdziwy ekran dotykowy ma naturalny
+      // szum odczytu rzędu 1-2px, którego nie zobaczysz w emulatorze devtools.
+      if(Math.abs(dx)<2&&Math.abs(dy)<2){ dx=0; dy=0; }
 
       // Przesuń naszą lokalną predykcję DOKŁADNIE tak, jak zrobi to serwer
       // (ten sam clamp prędkości i te same granice planszy). Dzięki temu
