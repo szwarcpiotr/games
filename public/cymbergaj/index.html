@@ -242,7 +242,7 @@ function drawMallet(mx,my,color,darkColor,glowColor,isMe){
   const g=ctx.createRadialGradient(mx,my,0,mx,my,MALLET_R*2.5);
   const a=isMe?0.4:0.2;
   g.addColorStop(0,glowColor.replace(')',`,${a})`).replace('rgb','rgba'));
-  g.addColorStop(1,glowColor.replace(')','0)').replace('rgb','rgba'));
+  g.addColorStop(1,glowColor.replace(')',',0)').replace('rgb','rgba'));
   ctx.fillStyle=g; ctx.beginPath(); ctx.arc(mx,my,MALLET_R*2.5,0,Math.PI*2); ctx.fill();
   ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.arc(mx+3,my+3,MALLET_R,0,Math.PI*2); ctx.fill();
   const mg=ctx.createRadialGradient(mx-6,my-6,2,mx,my,MALLET_R);
@@ -280,13 +280,12 @@ function loop(){
     let dx,dy;
 
     if(touchTarget!==null){
-      // ── Absolutne śledzenie: dx/dy = odległość palca od malleta (ze stanu serwera)
-      // Prędkość maleje gdy mallet dobiega do celu → brak dryfu i wzmacniania ruchu
       const mallet=myPlayer===1?state.m1:state.m2;
       dx=touchTarget.x-mallet.x;
       dy=touchTarget.y-mallet.y;
-      // Ignoruj szum sub-pikselowy
-      if(Math.abs(dx)<0.5&&Math.abs(dy)<0.5){ dx=0; dy=0; }
+      // Martwa strefa: wyślij jawne zero żeby serwer zatrzymał mallet.
+      // Samo pominięcie wysyłki nie działa — serwer ciągle aplikuje ostatni input.
+      if(Math.abs(dx)<1&&Math.abs(dy)<1){ dx=0; dy=0; }
     } else if(pointerLocked){
       dx=lockDx; dy=lockDy; lockDx=0; lockDy=0;
     } else {
@@ -294,7 +293,9 @@ function loop(){
       prevX=mouseX; prevY=mouseY;
     }
 
-    if(dx!==0||dy!==0) socket.emit('input',{dx,dy});
+    // Zawsze wysyłaj — nawet zeros. Serwer stosuje ostatni input co tick,
+    // więc bez jawnego {dx:0,dy:0} mallet dryfuje po zatrzymaniu myszy/palca.
+    socket.emit('input',{dx,dy});
   }
 
   ctx.drawImage(tableCanvas,0,0);
