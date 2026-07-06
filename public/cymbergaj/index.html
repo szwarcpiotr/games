@@ -19,97 +19,46 @@
     user-select: none;
     overscroll-behavior: none;
   }
-
-  #score {
-    display: flex;
-    gap: 80px;
-    margin-bottom: 16px;
-    font-size: 42px;
-    font-weight: bold;
-    letter-spacing: 4px;
-  }
+  #score { display:flex; gap:80px; margin-bottom:16px; font-size:42px; font-weight:bold; letter-spacing:4px; }
   .score-p1  { color: #4fc3f7; }
   .score-sep { color: #444; }
   .score-p2  { color: #ef5350; }
-
-  #canvas {
-    border: 2px solid #333;
-    border-radius: 12px;
-    cursor: none;
-    touch-action: none;
-    box-shadow: 0 0 40px rgba(79,195,247,0.15);
-    display: block;
-  }
-
-  #home-btn {
-    position: fixed; top: 16px; left: 16px;
-    background: rgba(255,255,255,0.08); border: 1px solid #333;
-    color: #aaa; font-size: 18px; width: 40px; height: 40px;
-    border-radius: 8px; cursor: pointer; display: flex;
-    align-items: center; justify-content: center;
-    transition: background 0.2s, color 0.2s; z-index: 30;
-  }
-  #home-btn:hover { background: rgba(255,255,255,0.18); color: #fff; }
-
-  #lock-btn {
-    position: fixed; top: 16px; right: 16px;
-    background: rgba(255,255,255,0.08); border: 1px solid #333;
-    color: #aaa; font-size: 13px; padding: 0 12px; height: 40px;
-    border-radius: 8px; cursor: pointer; display: flex;
-    align-items: center; justify-content: center; gap: 5px;
-    transition: background 0.2s, color 0.2s, border-color 0.2s; z-index: 30;
-    letter-spacing: 1px; font-family: inherit; user-select: none;
-  }
-  #lock-btn:hover { background: rgba(255,255,255,0.14); }
-
-  #overlay {
-    position: fixed; inset: 0;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    background: rgba(0,0,0,0.82);
-    font-size: 22px; gap: 16px;
-    z-index: 10;
-  }
-  #overlay h1 { font-size: 48px; letter-spacing: 6px; color: #4fc3f7; }
-  #overlay p  { color: #aaa; font-size: 15px; }
-  #overlay.hidden { display: none; }
-
-  #goal-msg {
-    position: fixed; top: 38%; left: 50%; transform: translateX(-50%);
-    font-size: 52px; font-weight: bold; color: #fff;
-    text-shadow: 0 0 30px currentColor;
-    pointer-events: none; opacity: 0;
-    transition: opacity 0.25s; z-index: 20;
-    white-space: nowrap;
-  }
-
-  /* ── Mobile portrait: canvas obrócony 90° ────────────────── */
+  #canvas { border:2px solid #333; border-radius:12px; cursor:none; touch-action:none;
+    box-shadow:0 0 40px rgba(79,195,247,0.15); display:block; }
+  #home-btn { position:fixed; top:16px; left:16px; background:rgba(255,255,255,0.08); border:1px solid #333;
+    color:#aaa; font-size:18px; width:40px; height:40px; border-radius:8px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; transition:background 0.2s,color 0.2s; z-index:30; }
+  #home-btn:hover { background:rgba(255,255,255,0.18); color:#fff; }
+  #lock-btn { position:fixed; top:16px; right:16px; background:rgba(255,255,255,0.08); border:1px solid #333;
+    color:#aaa; font-size:13px; padding:0 12px; height:40px; border-radius:8px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:5px;
+    transition:background 0.2s,color 0.2s,border-color 0.2s; z-index:30;
+    letter-spacing:1px; font-family:inherit; user-select:none; }
+  #lock-btn:hover { background:rgba(255,255,255,0.14); }
+  #overlay { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; background:rgba(0,0,0,0.82); font-size:22px; gap:16px; z-index:10; }
+  #overlay h1 { font-size:48px; letter-spacing:6px; color:#4fc3f7; }
+  #overlay p  { color:#aaa; font-size:15px; }
+  #overlay.hidden { display:none; }
+  #goal-msg { position:fixed; top:38%; left:50%; transform:translateX(-50%);
+    font-size:52px; font-weight:bold; color:#fff; text-shadow:0 0 30px currentColor;
+    pointer-events:none; opacity:0; transition:opacity 0.25s; z-index:20; white-space:nowrap; }
   @media (orientation: portrait) {
-    body { gap: 10px; justify-content: center; }
-    #score { font-size: 28px; gap: 40px; margin-bottom: 0; }
-    #lock-btn { display: none; }
-    #status-bar { font-size: 11px !important; }
-    #canvas-wrapper {
-      width: 100vw;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      /* wysokość = szerokość ekranu (bo canvas obrócony o 90°) */
-      height: 100vw;
-      overflow: hidden;
-    }
+    body { gap:10px; justify-content:center; }
+    #score { font-size:28px; gap:40px; margin-bottom:0; }
+    #lock-btn { display:none; }
+    #status-bar { font-size:11px !important; }
+    #canvas-wrapper { width:100vw; display:flex; align-items:center; justify-content:center; height:100vw; overflow:hidden; }
   }
 </style>
 </head>
 <body>
-
 <button id="home-btn" title="Menu główne">⌂</button>
 <button id="lock-btn" title="Zablokuj mysz (L)">🔓 L</button>
 <div id="overlay">
   <h1>CYMBERGAJ</h1>
   <p id="overlay-msg">Łączenie z serwerem…</p>
 </div>
-
 <div id="score">
   <span class="score-p1" id="s1">0</span>
   <span class="score-sep">:</span>
@@ -120,386 +69,243 @@
   <span id="status"></span><span id="restart-status" style="color:#888"></span>
 </div>
 <div id="goal-msg"></div>
-
 <script src="/socket.io/socket.io.js"></script>
 <script>
-// ── Stałe gry ─────────────────────────────────────────────────────────────────
-const W = 900, H = 560;
-const PUCK_R   = 14;
-const MALLET_R = 28;
-const GOAL_W   = 130;
-const GOAL_TOP = (H - GOAL_W) / 2;
-const GOAL_BOT = (H + GOAL_W) / 2;
+const W=900,H=560,PUCK_R=14,MALLET_R=28,GOAL_W=130;
+const GOAL_TOP=(H-GOAL_W)/2,GOAL_BOT=(H+GOAL_W)/2;
+const M1_DARK='rgb(39,122,159)',M2_DARK='rgb(119,41,40)';
 
-// Pre-compute ciemne kolory malletów (zamiast darken() co klatkę)
-const M1_DARK = 'rgb(39,122,159)';   // #4fc3f7 * 0.5
-const M2_DARK = 'rgb(119,41,40)';    // #ef5350 * 0.5
+const canvas=document.getElementById('canvas');
+const ctx=canvas.getContext('2d',{alpha:false});
+const overlay=document.getElementById('overlay');
+const overlayMsg=document.getElementById('overlay-msg');
+const statusEl=document.getElementById('status');
+const goalMsgEl=document.getElementById('goal-msg');
+const lockBtn=document.getElementById('lock-btn');
+const s1El=document.getElementById('s1');
+const s2El=document.getElementById('s2');
+const restartEl=document.getElementById('restart-status');
+canvas.width=W; canvas.height=H;
 
-// ── DOM ───────────────────────────────────────────────────────────────────────
-const canvas     = document.getElementById('canvas');
-const ctx        = canvas.getContext('2d', { alpha: false }); // alpha:false = szybszy clear
-const overlay    = document.getElementById('overlay');
-const overlayMsg = document.getElementById('overlay-msg');
-const statusEl   = document.getElementById('status');
-const goalMsgEl  = document.getElementById('goal-msg');
-const lockBtn    = document.getElementById('lock-btn');
-const s1El       = document.getElementById('s1');
-const s2El       = document.getElementById('s2');
-const restartEl  = document.getElementById('restart-status');
+const tableCanvas=new OffscreenCanvas(W,H);
+const tCtx=tableCanvas.getContext('2d');
+(function prebakeTable(){
+  tCtx.fillStyle='#0d1f1a'; tCtx.beginPath(); tCtx.roundRect(0,0,W,H,10); tCtx.fill();
+  tCtx.strokeStyle='#1a3a2a'; tCtx.lineWidth=2; tCtx.beginPath(); tCtx.roundRect(1,1,W-2,H-2,10); tCtx.stroke();
+  tCtx.setLineDash([12,10]); tCtx.strokeStyle='#1e4030'; tCtx.lineWidth=2;
+  tCtx.beginPath(); tCtx.moveTo(W/2,0); tCtx.lineTo(W/2,H); tCtx.stroke(); tCtx.setLineDash([]);
+  tCtx.beginPath(); tCtx.arc(W/2,H/2,70,0,Math.PI*2); tCtx.stroke();
+  tCtx.fillStyle='#1a1a2e'; tCtx.fillRect(0,GOAL_TOP,8,GOAL_W); tCtx.fillRect(W-8,GOAL_TOP,8,GOAL_W);
+  tCtx.strokeStyle='#4fc3f7'; tCtx.lineWidth=3; tCtx.beginPath(); tCtx.moveTo(2,GOAL_TOP); tCtx.lineTo(2,GOAL_BOT); tCtx.stroke();
+  tCtx.strokeStyle='#ef5350'; tCtx.beginPath(); tCtx.moveTo(W-2,GOAL_TOP); tCtx.lineTo(W-2,GOAL_BOT); tCtx.stroke();
+})();
 
-canvas.width  = W;
-canvas.height = H;
+let canvasRect={left:0,top:0,width:1,height:1};
+let isPortrait=false,cssW=W,cssH=H,rotationDeg=-90;
 
-// ── Offscreen canvas dla statycznego stołu ────────────────────────────────────
-const tableCanvas = new OffscreenCanvas(W, H);
-const tCtx = tableCanvas.getContext('2d');
-
-function prebakeTable() {
-  tCtx.fillStyle = '#0d1f1a';
-  tCtx.beginPath(); tCtx.roundRect(0, 0, W, H, 10); tCtx.fill();
-
-  tCtx.strokeStyle = '#1a3a2a'; tCtx.lineWidth = 2;
-  tCtx.beginPath(); tCtx.roundRect(1, 1, W-2, H-2, 10); tCtx.stroke();
-
-  tCtx.setLineDash([12, 10]);
-  tCtx.strokeStyle = '#1e4030'; tCtx.lineWidth = 2;
-  tCtx.beginPath(); tCtx.moveTo(W/2, 0); tCtx.lineTo(W/2, H); tCtx.stroke();
-  tCtx.setLineDash([]);
-
-  tCtx.strokeStyle = '#1e4030'; tCtx.lineWidth = 2;
-  tCtx.beginPath(); tCtx.arc(W/2, H/2, 70, 0, Math.PI*2); tCtx.stroke();
-
-  tCtx.fillStyle = '#1a1a2e';
-  tCtx.fillRect(0, GOAL_TOP, 8, GOAL_W);
-  tCtx.fillRect(W-8, GOAL_TOP, 8, GOAL_W);
-  tCtx.strokeStyle = '#4fc3f7'; tCtx.lineWidth = 3;
-  tCtx.beginPath(); tCtx.moveTo(2, GOAL_TOP); tCtx.lineTo(2, GOAL_BOT); tCtx.stroke();
-  tCtx.strokeStyle = '#ef5350';
-  tCtx.beginPath(); tCtx.moveTo(W-2, GOAL_TOP); tCtx.lineTo(W-2, GOAL_BOT); tCtx.stroke();
-}
-prebakeTable();
-
-// ── Resize / orientacja ───────────────────────────────────────────────────────
-let canvasRect = { left:0, top:0, width:1, height:1 };
-let isPortrait = false;
-let cssW = W, cssH = H; // fizyczne wymiary CSS canvasa PRZED transformem
-// Gracz 1 (mallet po lewej → po obrocie na dole): -90°
-// Gracz 2 (mallet po prawej → po obrocie na dole): +90°
-let rotationDeg = -90;
-
-function resize() {
-  isPortrait = window.innerHeight > window.innerWidth;
-
-  if (isPortrait) {
-    // Chcemy żeby krótki bok canvasa (H=560) = szerokość ekranu po obrocie
-    const scale = (window.innerWidth - 8) / H;
-    cssW = W * scale;  // szerokość CSS przed transformem (długi bok)
-    cssH = H * scale;  // wysokość CSS przed transformem (krótki bok)
-    canvas.style.width  = cssW + 'px';
-    canvas.style.height = cssH + 'px';
-    canvas.style.transform = `rotate(${rotationDeg}deg)`;
-    // Wrapper w pionie zajmuje cssW (bo canvas po obrocie ma wysokość = cssW)
-    document.getElementById('canvas-wrapper').style.height = cssW + 'px';
+function resize(){
+  isPortrait=window.innerHeight>window.innerWidth;
+  if(isPortrait){
+    const scale=(window.innerWidth-8)/H;
+    cssW=W*scale; cssH=H*scale;
+    canvas.style.width=cssW+'px'; canvas.style.height=cssH+'px';
+    canvas.style.transform=`rotate(${rotationDeg}deg)`;
+    document.getElementById('canvas-wrapper').style.height=cssW+'px';
   } else {
-    const scale = Math.min(1, (window.innerWidth - 20) / W, (window.innerHeight - 140) / H);
-    cssW = W * scale;
-    cssH = H * scale;
-    canvas.style.width  = cssW + 'px';
-    canvas.style.height = cssH + 'px';
-    canvas.style.transform = '';
-    document.getElementById('canvas-wrapper').style.height = '';
+    const scale=Math.min(1,(window.innerWidth-20)/W,(window.innerHeight-140)/H);
+    cssW=W*scale; cssH=H*scale;
+    canvas.style.width=cssW+'px'; canvas.style.height=cssH+'px';
+    canvas.style.transform='';
+    document.getElementById('canvas-wrapper').style.height='';
   }
-
-  requestAnimationFrame(() => { canvasRect = canvas.getBoundingClientRect(); });
+  requestAnimationFrame(()=>{ canvasRect=canvas.getBoundingClientRect(); });
 }
 resize();
-window.addEventListener('resize', resize);
-screen.orientation?.addEventListener('change', () => setTimeout(resize, 150));
+window.addEventListener('resize',resize);
+screen.orientation?.addEventListener('change',()=>setTimeout(resize,150));
+screen.orientation?.addEventListener('change',()=>setTimeout(resize,150));
 
-// ── Stan gry ──────────────────────────────────────────────────────────────────
-let myPlayer = 0;
-let state = {
-  puck:  { x: W/2, y: H/2, vx: 0, vy: 0 },
-  m1:    { x: 88,    y: H/2 },
-  m2:    { x: W-88,  y: H/2 },
-  score: { p1: 0, p2: 0 },
-};
+let myPlayer=0;
+let state={puck:{x:W/2,y:H/2,vx:0,vy:0},m1:{x:88,y:H/2},m2:{x:W-88,y:H/2},score:{p1:0,p2:0}};
 
-// ── Input ─────────────────────────────────────────────────────────────────────
-let mouseX = 0, mouseY = 0, prevX = 0, prevY = 0;
-let pointerLocked = false;
-let lockDx = 0, lockDy = 0;
-let activeTouchId = null;
+let mouseX=0,mouseY=0,prevX=0,prevY=0;
+let pointerLocked=false,lockDx=0,lockDy=0;
 
-// Przelicza punkt ekranu (clientX/Y) na współrzędne gry (0..W, 0..H)
-// W portrait canvas jest obrócony CSS-em, więc odwracamy transformację ręcznie
-function pointerToGame(clientX, clientY) {
-  // Środek canvasa w przestrzeni ekranu (canvasRect jest po transformie)
-  const cx = canvasRect.left + canvasRect.width  / 2;
-  const cy = canvasRect.top  + canvasRect.height / 2;
-  let dx = clientX - cx;
-  let dy = clientY - cy;
+// ── TOUCH: absolutna pozycja celu ────────────────────────────────────────────
+// Zamiast delta palca (która wzmacnia ruch), pamiętamy dokładną pozycję palca
+// w układzie gry. Co klatkę: dx = palec.x − mallet.x (ze stanu serwera).
+// Gdy mallet dobiega do celu, delta maleje do 0 — brak dryfu, proporcjonalna prędkość.
+let touchTarget=null; // {x,y} w przestrzeni gry lub null gdy palec uniesiony
+let activeTouchId=null;
 
-  if (isPortrait) {
-    // Cofamy obrót CSS (odwrotna rotacja)
-    const rad = -rotationDeg * Math.PI / 180;
-    const cos = Math.cos(rad), sin = Math.sin(rad);
-    const rdx = dx * cos - dy * sin;
-    const rdy = dx * sin + dy * cos;
-    dx = rdx; dy = rdy;
-    // Po cofnięciu obrotu dx jest wzdłuż cssW (oś X canvasa), dy wzdłuż cssH
-    // Skalujemy używając fizycznych wymiarów CSS przed transformem
-    return {
-      x: W/2 + dx * (W / cssW),
-      y: H/2 + dy * (H / cssH),
-    };
+function pointerToGame(clientX,clientY){
+  const cx=canvasRect.left+canvasRect.width/2;
+  const cy=canvasRect.top+canvasRect.height/2;
+  let dx=clientX-cx, dy=clientY-cy;
+  if(isPortrait){
+    const rad=-rotationDeg*Math.PI/180;
+    const cos=Math.cos(rad),sin=Math.sin(rad);
+    const rdx=dx*cos-dy*sin, rdy=dx*sin+dy*cos;
+    dx=rdx; dy=rdy;
   }
-
-  return {
-    x: W/2 + dx * (W / cssW),
-    y: H/2 + dy * (H / cssH),
-  };
+  return {x:W/2+dx*(W/cssW), y:H/2+dy*(H/cssH)};
 }
 
-// Mouse
-document.addEventListener('mousemove', e => {
-  if (pointerLocked) {
-    lockDx += e.movementX;
-    lockDy += e.movementY;
-  } else {
-    const p = pointerToGame(e.clientX, e.clientY);
-    mouseX = p.x; mouseY = p.y;
-  }
-}, { passive: true });
+// Czy punkt gry jest na planszy (z marginesem malleta)
+function onBoard(gx,gy){
+  return gx>=MALLET_R && gx<=W-MALLET_R && gy>=MALLET_R && gy<=H-MALLET_R;
+}
 
-// Touch
-canvas.addEventListener('touchstart', e => {
+canvas.addEventListener('touchstart',e=>{
   e.preventDefault();
-  if (activeTouchId !== null) return;
-  const t = e.changedTouches[0];
-  activeTouchId = t.identifier;
-  const p = pointerToGame(t.clientX, t.clientY);
-  mouseX = prevX = p.x;
-  mouseY = prevY = p.y;
-}, { passive: false });
+  if(activeTouchId!==null) return;
+  const t=e.changedTouches[0];
+  activeTouchId=t.identifier;
+  const p=pointerToGame(t.clientX,t.clientY);
+  touchTarget=onBoard(p.x,p.y)?{x:p.x,y:p.y}:null;
+},{passive:false});
 
-canvas.addEventListener('touchmove', e => {
+canvas.addEventListener('touchmove',e=>{
   e.preventDefault();
-  const t = [...e.changedTouches].find(c => c.identifier === activeTouchId);
-  if (!t) return;
-  const p = pointerToGame(t.clientX, t.clientY);
-  mouseX = p.x; mouseY = p.y;
-}, { passive: false });
+  const t=[...e.changedTouches].find(c=>c.identifier===activeTouchId);
+  if(!t) return;
+  const p=pointerToGame(t.clientX,t.clientY);
+  // Gdy palec wychodzi poza planszę — zatrzymaj mallet (nie ścigaj się poza boiskiem)
+  touchTarget=onBoard(p.x,p.y)?{x:p.x,y:p.y}:null;
+},{passive:false});
 
-canvas.addEventListener('touchend', e => {
-  if ([...e.changedTouches].find(c => c.identifier === activeTouchId)) {
-    activeTouchId = null;
+canvas.addEventListener('touchend',e=>{
+  if([...e.changedTouches].find(c=>c.identifier===activeTouchId)){
+    activeTouchId=null;
+    touchTarget=null; // palec uniesiony — mallet stoi
   }
-}, { passive: false });
+},{passive:false});
 
-// Pointer lock
-canvas.addEventListener('click', () => {
-  if (!pointerLocked && myPlayer !== 0) canvas.requestPointerLock();
-});
-document.addEventListener('pointerlockchange', () => {
-  pointerLocked = document.pointerLockElement === canvas;
-  lockBtn.textContent    = pointerLocked ? '🔒 L' : '🔓 L';
-  lockBtn.style.color    = pointerLocked ? '#4fc3f7' : '#aaa';
-  lockBtn.style.borderColor = pointerLocked ? '#4fc3f7' : '#333';
-});
-lockBtn.addEventListener('click', () => {
-  if (myPlayer === 0) return;
-  pointerLocked ? document.exitPointerLock() : canvas.requestPointerLock();
-});
+document.addEventListener('mousemove',e=>{
+  if(pointerLocked){ lockDx+=e.movementX; lockDy+=e.movementY; }
+  else { const p=pointerToGame(e.clientX,e.clientY); mouseX=p.x; mouseY=p.y; }
+},{passive:true});
 
-// Klawiatura
-let myRestartVote = false;
-document.addEventListener('keydown', e => {
-  const k = e.key.toLowerCase();
-  if (k === 'l' && myPlayer !== 0) {
-    pointerLocked ? document.exitPointerLock() : canvas.requestPointerLock();
-  }
-  if (k === 'r' && myPlayer !== 0) {
-    myRestartVote = !myRestartVote;
-    socket.emit('restart_vote', { vote: myRestartVote });
-  }
+canvas.addEventListener('click',()=>{ if(!pointerLocked&&myPlayer!==0) canvas.requestPointerLock(); });
+document.addEventListener('pointerlockchange',()=>{
+  pointerLocked=document.pointerLockElement===canvas;
+  lockBtn.textContent=pointerLocked?'🔒 L':'🔓 L';
+  lockBtn.style.color=pointerLocked?'#4fc3f7':'#aaa';
+  lockBtn.style.borderColor=pointerLocked?'#4fc3f7':'#333';
+});
+lockBtn.addEventListener('click',()=>{ if(myPlayer===0) return; pointerLocked?document.exitPointerLock():canvas.requestPointerLock(); });
+
+let myRestartVote=false;
+document.addEventListener('keydown',e=>{
+  const k=e.key.toLowerCase();
+  if(k==='l'&&myPlayer!==0){ pointerLocked?document.exitPointerLock():canvas.requestPointerLock(); }
+  if(k==='r'&&myPlayer!==0){ myRestartVote=!myRestartVote; socket.emit('restart_vote',{vote:myRestartVote}); }
 });
 
-// ── Socket.io ─────────────────────────────────────────────────────────────────
-const socket = io({ transports: ['websocket'] }); // tylko websocket — bez polling fallback
-
-socket.on('connect', () => { overlayMsg.textContent = 'Połączono. Czekanie na drugiego gracza…'; });
-
-socket.on('assigned', ({ player }) => {
-  myPlayer = player;
-  // Gracz 1: mallet po lewej → -90° → jego połowa na dole ekranu
-  // Gracz 2: mallet po prawej → +90° → jego połowa na dole ekranu
-  rotationDeg = (player === 2) ? 90 : -90;
-  resize(); // przelicz obrót po poznaniu gracza
-
-  if (player === 1) {
-    overlayMsg.textContent = 'Jesteś Graczem 1 (niebieski). Czekanie na przeciwnika…';
-    statusEl.textContent = 'Sterowanie: mysz/dotyk';
-  } else if (player === 2) {
-    overlayMsg.textContent = 'Jesteś Graczem 2 (czerwony). Czekanie na przeciwnika…';
-    statusEl.textContent = 'Sterowanie: mysz/dotyk';
-  } else {
-    overlayMsg.textContent = 'Oglądasz jako widz.';
-    statusEl.textContent = 'Tryb widza';
-  }
+const socket=io({transports:['websocket']});
+socket.on('connect',()=>{ overlayMsg.textContent='Połączono. Czekanie na drugiego gracza…'; });
+socket.on('assigned',({player})=>{
+  myPlayer=player;
+  rotationDeg=(player===2)?90:-90;
+  resize();
+  if(player===1){ overlayMsg.textContent='Jesteś Graczem 1 (niebieski). Czekanie na przeciwnika…'; statusEl.textContent='Sterowanie: mysz/dotyk'; }
+  else if(player===2){ overlayMsg.textContent='Jesteś Graczem 2 (czerwony). Czekanie na przeciwnika…'; statusEl.textContent='Sterowanie: mysz/dotyk'; }
+  else { overlayMsg.textContent='Oglądasz jako widz.'; statusEl.textContent='Tryb widza'; }
 });
-
-socket.on('lobby', ({ players, spectators }) => {
-  if (players < 2) overlayMsg.textContent = `Gracze: ${players}/2 — czekanie…`;
-  if (spectators > 0 && players >= 2) {
-    statusEl.textContent = (myPlayer !== 0 ? 'Sterowanie: mysz' : 'Tryb widza') + `  |  Widzowie: ${spectators}`;
-  }
+socket.on('lobby',({players,spectators})=>{
+  if(players<2) overlayMsg.textContent=`Gracze: ${players}/2 — czekanie…`;
+  if(spectators>0&&players>=2) statusEl.textContent=(myPlayer!==0?'Sterowanie: mysz/dotyk':'Tryb widza')+`  |  Widzowie: ${spectators}`;
 });
-
-socket.on('start', ({ score }) => {
-  state.score = score;
-  s1El.textContent = score.p1;
-  s2El.textContent = score.p2;
+socket.on('start',({score})=>{
+  state.score=score; s1El.textContent=score.p1; s2El.textContent=score.p2;
   overlay.classList.add('hidden');
-  if (myPlayer !== 0) restartEl.textContent = 'restart: R  0/2';
+  if(myPlayer!==0) restartEl.textContent='restart: R  0/2';
 });
-
-socket.on('state', (snap) => {
-  state = snap;
-  // Score update tylko gdy się zmieniło (unika DOM write co klatkę)
-  if (s1El.textContent != snap.score.p1) s1El.textContent = snap.score.p1;
-  if (s2El.textContent != snap.score.p2) s2El.textContent = snap.score.p2;
+socket.on('state',(snap)=>{
+  state=snap;
+  if(s1El.textContent!=snap.score.p1) s1El.textContent=snap.score.p1;
+  if(s2El.textContent!=snap.score.p2) s2El.textContent=snap.score.p2;
 });
-
-socket.on('goal', ({ who, score }) => {
-  state.score = score;
-  s1El.textContent = score.p1;
-  s2El.textContent = score.p2;
-  const col = who === 'p1' ? '#4fc3f7' : '#ef5350';
-  goalMsgEl.style.color   = col;
-  goalMsgEl.textContent   = `⚡ GOL! Gracz ${who === 'p1' ? 1 : 2} ⚡`;
-  goalMsgEl.style.opacity = '1';
-  setTimeout(() => { goalMsgEl.style.opacity = '0'; }, 1800);
+socket.on('goal',({who,score})=>{
+  state.score=score; s1El.textContent=score.p1; s2El.textContent=score.p2;
+  goalMsgEl.style.color=who==='p1'?'#4fc3f7':'#ef5350';
+  goalMsgEl.textContent=`⚡ GOL! Gracz ${who==='p1'?1:2} ⚡`;
+  goalMsgEl.style.opacity='1';
+  setTimeout(()=>{ goalMsgEl.style.opacity='0'; },1800);
 });
+socket.on('player_left',({player})=>{ overlay.classList.remove('hidden'); overlayMsg.textContent=`Gracz ${player} wyszedł. Czekanie na nowego gracza…`; });
+socket.on('disconnect',()=>{ overlay.classList.remove('hidden'); overlayMsg.textContent='Rozłączono z serwerem. Odśwież stronę.'; });
+socket.on('restart_votes',({count})=>{ if(myPlayer===0) return; restartEl.textContent=`restart: R  ${count}/2`; restartEl.style.color=myRestartVote?'#4fc3f7':'#666'; });
+socket.on('restart',()=>{ myRestartVote=false; restartEl.textContent='restart: R  0/2'; });
 
-socket.on('player_left', ({ player }) => {
-  overlay.classList.remove('hidden');
-  overlayMsg.textContent = `Gracz ${player} wyszedł. Czekanie na nowego gracza…`;
-});
-
-socket.on('disconnect', () => {
-  overlay.classList.remove('hidden');
-  overlayMsg.textContent = 'Rozłączono z serwerem. Odśwież stronę.';
-});
-
-socket.on('restart_votes', ({ count }) => {
-  if (myPlayer === 0) return;
-  restartEl.textContent = `restart: R  ${count}/2`;
-  restartEl.style.color = myRestartVote ? '#4fc3f7' : '#666';
-});
-
-socket.on('restart', () => {
-  myRestartVote = false;
-  restartEl.textContent = 'restart: R  0/2';
-});
-
-// ── Rendering ─────────────────────────────────────────────────────────────────
-function drawMallet(mx, my, color, darkColor, glowColor, isMe) {
-  // Glow
-  const g = ctx.createRadialGradient(mx, my, 0, mx, my, MALLET_R * 2.5);
-  const a = isMe ? 0.4 : 0.2;
-  g.addColorStop(0, glowColor.replace(')', `,${a})`).replace('rgb','rgba'));
-  g.addColorStop(1, glowColor.replace(')', ',0)').replace('rgb','rgba'));
-  ctx.fillStyle = g;
-  ctx.beginPath(); ctx.arc(mx, my, MALLET_R * 2.5, 0, Math.PI*2); ctx.fill();
-
-  // Cień
-  ctx.fillStyle = 'rgba(0,0,0,0.3)';
-  ctx.beginPath(); ctx.arc(mx+3, my+3, MALLET_R, 0, Math.PI*2); ctx.fill();
-
-  // Mallet
-  const mg = ctx.createRadialGradient(mx-6, my-6, 2, mx, my, MALLET_R);
-  mg.addColorStop(0, '#fff');
-  mg.addColorStop(0.3, color);
-  mg.addColorStop(1, darkColor);
-  ctx.fillStyle = mg;
-  ctx.beginPath(); ctx.arc(mx, my, MALLET_R, 0, Math.PI*2); ctx.fill();
-
-  // Ring
-  ctx.strokeStyle = isMe ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.25)';
-  ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.arc(mx, my, MALLET_R-3, 0, Math.PI*2); ctx.stroke();
+function drawMallet(mx,my,color,darkColor,glowColor,isMe){
+  const g=ctx.createRadialGradient(mx,my,0,mx,my,MALLET_R*2.5);
+  const a=isMe?0.4:0.2;
+  g.addColorStop(0,glowColor.replace(')',`,${a})`).replace('rgb','rgba'));
+  g.addColorStop(1,glowColor.replace(')','0)').replace('rgb','rgba'));
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(mx,my,MALLET_R*2.5,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.arc(mx+3,my+3,MALLET_R,0,Math.PI*2); ctx.fill();
+  const mg=ctx.createRadialGradient(mx-6,my-6,2,mx,my,MALLET_R);
+  mg.addColorStop(0,'#fff'); mg.addColorStop(0.3,color); mg.addColorStop(1,darkColor);
+  ctx.fillStyle=mg; ctx.beginPath(); ctx.arc(mx,my,MALLET_R,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle=isMe?'rgba(255,255,255,0.6)':'rgba(255,255,255,0.25)'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(mx,my,MALLET_R-3,0,Math.PI*2); ctx.stroke();
 }
 
-function drawPuck() {
-  const p = state.puck;
-  const vx = p.vx, vy = p.vy;
-  const speed = Math.sqrt(vx*vx + vy*vy);
-
-  if (speed > 2) {
-    const tx = p.x - vx*3, ty = p.y - vy*3;
-    const tg = ctx.createLinearGradient(tx, ty, p.x, p.y);
-    tg.addColorStop(0, 'rgba(255,255,255,0)');
-    tg.addColorStop(1, `rgba(255,255,255,${Math.min(speed/60, 0.35)})`);
-    ctx.strokeStyle = tg; ctx.lineWidth = PUCK_R*1.5; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(p.x, p.y); ctx.stroke();
+function drawPuck(){
+  const p=state.puck,vx=p.vx,vy=p.vy,speed=Math.sqrt(vx*vx+vy*vy);
+  if(speed>2){
+    const tx=p.x-vx*3,ty=p.y-vy*3;
+    const tg=ctx.createLinearGradient(tx,ty,p.x,p.y);
+    tg.addColorStop(0,'rgba(255,255,255,0)');
+    tg.addColorStop(1,`rgba(255,255,255,${Math.min(speed/60,0.35)})`);
+    ctx.strokeStyle=tg; ctx.lineWidth=PUCK_R*1.5; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(tx,ty); ctx.lineTo(p.x,p.y); ctx.stroke();
   }
-
-  // Glow
-  const pg = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, PUCK_R*2.5);
-  pg.addColorStop(0, 'rgba(220,220,255,0.4)');
-  pg.addColorStop(1, 'rgba(220,220,255,0)');
-  ctx.fillStyle = pg;
-  ctx.beginPath(); ctx.arc(p.x, p.y, PUCK_R*2.5, 0, Math.PI*2); ctx.fill();
-
-  // Cień
-  ctx.fillStyle = 'rgba(0,0,0,0.4)';
-  ctx.beginPath(); ctx.arc(p.x+2, p.y+2, PUCK_R, 0, Math.PI*2); ctx.fill();
-
-  // Krążek
-  const pkG = ctx.createRadialGradient(p.x-4, p.y-4, 1, p.x, p.y, PUCK_R);
-  pkG.addColorStop(0, '#d0d0e0'); pkG.addColorStop(0.6, '#888899'); pkG.addColorStop(1, '#333344');
-  ctx.fillStyle = pkG;
-  ctx.beginPath(); ctx.arc(p.x, p.y, PUCK_R, 0, Math.PI*2); ctx.fill();
+  const pg=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,PUCK_R*2.5);
+  pg.addColorStop(0,'rgba(220,220,255,0.4)'); pg.addColorStop(1,'rgba(220,220,255,0)');
+  ctx.fillStyle=pg; ctx.beginPath(); ctx.arc(p.x,p.y,PUCK_R*2.5,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.arc(p.x+2,p.y+2,PUCK_R,0,Math.PI*2); ctx.fill();
+  const pkG=ctx.createRadialGradient(p.x-4,p.y-4,1,p.x,p.y,PUCK_R);
+  pkG.addColorStop(0,'#d0d0e0'); pkG.addColorStop(0.6,'#888899'); pkG.addColorStop(1,'#333344');
+  ctx.fillStyle=pkG; ctx.beginPath(); ctx.arc(p.x,p.y,PUCK_R,0,Math.PI*2); ctx.fill();
 }
 
-// ── Throttle inputu — co 2 klatki RAF (~30Hz wysyłki, ale render 60Hz) ────────
-// Serwer tickuje 60Hz ale wysyłka co 16ms i tak trafia między ticki; 30Hz wystarcza
-let frameCount = 0;
-
-function loop() {
+let frameCount=0;
+function loop(){
   requestAnimationFrame(loop);
   frameCount++;
 
-  // Wysyłaj input co 2 klatki
-  if (frameCount % 2 === 0 && (myPlayer === 1 || myPlayer === 2)) {
-    let dx, dy;
-    if (pointerLocked) {
-      dx = lockDx; dy = lockDy;
-      lockDx = 0;  lockDy = 0;
+  if(frameCount%2===0&&(myPlayer===1||myPlayer===2)){
+    let dx,dy;
+
+    if(touchTarget!==null){
+      // ── Absolutne śledzenie: dx/dy = odległość palca od malleta (ze stanu serwera)
+      // Prędkość maleje gdy mallet dobiega do celu → brak dryfu i wzmacniania ruchu
+      const mallet=myPlayer===1?state.m1:state.m2;
+      dx=touchTarget.x-mallet.x;
+      dy=touchTarget.y-mallet.y;
+      // Ignoruj szum sub-pikselowy
+      if(Math.abs(dx)<0.5&&Math.abs(dy)<0.5){ dx=0; dy=0; }
+    } else if(pointerLocked){
+      dx=lockDx; dy=lockDy; lockDx=0; lockDy=0;
     } else {
-      dx = mouseX - prevX;
-      dy = mouseY - prevY;
-      prevX = mouseX; prevY = mouseY;
+      dx=mouseX-prevX; dy=mouseY-prevY;
+      prevX=mouseX; prevY=mouseY;
     }
-    // Nie wysyłaj jeśli zerowe (oszczędność bandwidthu)
-    if (dx !== 0 || dy !== 0) socket.emit('input', { dx, dy });
+
+    if(dx!==0||dy!==0) socket.emit('input',{dx,dy});
   }
 
-  // Render
-  ctx.drawImage(tableCanvas, 0, 0); // pre-baked stół — 1 operacja zamiast ~10
-
-  const isP1 = myPlayer === 1, isP2 = myPlayer === 2;
-  drawMallet(state.m2.x, state.m2.y, '#ef5350', M2_DARK, 'rgb(239,83,80)', isP2);
-  drawMallet(state.m1.x, state.m1.y, '#4fc3f7', M1_DARK, 'rgb(79,195,247)', isP1);
+  ctx.drawImage(tableCanvas,0,0);
+  const isP1=myPlayer===1,isP2=myPlayer===2;
+  drawMallet(state.m2.x,state.m2.y,'#ef5350',M2_DARK,'rgb(239,83,80)',isP2);
+  drawMallet(state.m1.x,state.m1.y,'#4fc3f7',M1_DARK,'rgb(79,195,247)',isP1);
   drawPuck();
 }
-
 loop();
 
-document.getElementById('home-btn').addEventListener('click', () => {
-  window.location.href = '/';
-});
+document.getElementById('home-btn').addEventListener('click',()=>{ window.location.href='/'; });
 </script>
 </body>
 </html>

@@ -18,6 +18,7 @@
     color: #e0e0e0;
     user-select: none;
     overscroll-behavior: none;
+    transition: background 0.2s, color 0.2s;
   }
 
   /* ── Górny pasek (sticky) ─────────────────────────────────── */
@@ -42,14 +43,26 @@
     margin-bottom: 8px;
   }
 
-  #home-btn {
+  #home-btn, #settings-btn {
     background: rgba(255,255,255,0.08); border: 1px solid #333;
     color: #aaa; font-size: 18px; min-width: 40px; min-height: 40px;
     border-radius: 8px; cursor: pointer; display: flex;
     align-items: center; justify-content: center;
     transition: background 0.2s, color 0.2s; flex-shrink: 0;
   }
-  #home-btn:active { background: rgba(255,255,255,0.18); color: #fff; }
+  #home-btn:active, #settings-btn:active { background: rgba(255,255,255,0.18); color: #fff; }
+
+  /* Ustawienia — dostępne tylko w wersji telefonicznej (wąski ekran) */
+  #settings-btn {
+    visibility: hidden;
+    pointer-events: none;
+  }
+  @media (max-width: 639px) {
+    #settings-btn {
+      visibility: visible;
+      pointer-events: auto;
+    }
+  }
 
   h1 {
     font-size: clamp(16px, 5vw, 26px);
@@ -60,9 +73,6 @@
     text-align: center;
   }
 
-  /* placeholder right side to center h1 */
-  .header-spacer { min-width: 40px; }
-
   #turn-banner {
     font-size: clamp(11px, 3.2vw, 14px);
     color: #888;
@@ -72,6 +82,71 @@
     padding: 0 8px;
   }
   #turn-banner.my-turn { color: #4fc3f7; font-weight: bold; }
+
+  /* ── Panel ustawień (styl jak w warcabach) ───────────────────── */
+  #settings-panel {
+    position: fixed;
+    top: 64px; right: 16px;
+    background: #111820;
+    border: 1px solid #2a3a4a;
+    border-radius: 12px;
+    padding: 16px;
+    width: 220px;
+    z-index: 45;
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+  }
+  #settings-panel.open { display: flex; }
+  #settings-panel h3 {
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: #4fc3f7;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .setting-option {
+    padding: 10px 12px;
+    border: 1px solid #2a3a4a;
+    border-radius: 8px;
+    cursor: pointer;
+    background: #0d1520;
+    color: #aaa;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    letter-spacing: 1px;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: space-between;
+  }
+  .setting-option:active { border-color: #4fc3f7; }
+  .setting-option.active { border-color: #4fc3f7; background: rgba(79,195,247,0.1); color: #4fc3f7; }
+
+  .setting-label { display: flex; align-items: center; gap: 8px; }
+  .setting-icon { font-size: 14px; }
+
+  .setting-toggle {
+    width: 36px; height: 20px;
+    border-radius: 10px;
+    background: #222;
+    position: relative;
+    flex-shrink: 0;
+    transition: background 0.2s;
+  }
+  .setting-toggle::after {
+    content: '';
+    position: absolute;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: #888;
+    top: 2px; left: 2px;
+    transition: transform 0.2s, background 0.2s;
+  }
+  .setting-option.active .setting-toggle { background: rgba(79,195,247,0.35); }
+  .setting-option.active .setting-toggle::after { background: #4fc3f7; transform: translateX(16px); }
 
   /* ── Kości ────────────────────────────────────────────────── */
   #dice-area {
@@ -159,6 +234,7 @@
     font-size: clamp(11px, 3vw, 13px);
     width: 100%;
     min-width: 280px;
+    transition: font-size 0.15s;
   }
 
   th, td {
@@ -253,6 +329,65 @@
     .delta-rem            { color: #445; }
     .delta-neg            { color: #a55; }
   }
+
+  /* ══════════════════════════════════════════════════════════
+     TRYB WYSOKIEGO KONTRASTU (tylko telefon, opcjonalny)
+     ══════════════════════════════════════════════════════════ */
+  body.high-contrast {
+    background: #000;
+    color: #fff;
+  }
+  body.high-contrast #top-bar { background: #000; border-bottom: 1px solid #fff; }
+  body.high-contrast h1 { color: #00e5ff; }
+  body.high-contrast #turn-banner { color: #fff; }
+  body.high-contrast #turn-banner.my-turn { color: #00e5ff; }
+  body.high-contrast #home-btn,
+  body.high-contrast #settings-btn {
+    background: #000; border: 2px solid #fff; color: #fff;
+  }
+  body.high-contrast .die { background: #fff; border-color: #000; box-shadow: 0 0 0 2px #000; }
+  body.high-contrast .die.held { border-color: #00e5ff; box-shadow: 0 0 0 3px #00e5ff; }
+  body.high-contrast .pip { fill: #000; }
+  body.high-contrast #roll-btn { background: #ff1744; color: #fff; }
+  body.high-contrast #roll-btn:disabled { background: #330000; color: #995; }
+  body.high-contrast #rolls-left { color: #fff; }
+  body.high-contrast th { background: #000; color: #00e5ff; border: 1px solid #fff; }
+  body.high-contrast td, body.high-contrast th { border: 1px solid #fff; }
+  body.high-contrast td.label, body.high-contrast th.label { background: #000; color: #fff; }
+  body.high-contrast tr.section-row td { background: #111; color: #ccc; }
+  body.high-contrast td.filled { color: #fff; background: #001a1a; }
+  body.high-contrast td.empty-other { color: #999; }
+  body.high-contrast td.preview { color: #00e5ff; opacity: 1; }
+  body.high-contrast td.preview-zero { color: #bbb; }
+  body.high-contrast td.preview:active { background: rgba(0,229,255,0.3); }
+  body.high-contrast tfoot td { background: #000; color: #00e5ff; border: 1px solid #fff; }
+  body.high-contrast .delta-pos { color: #00ff6a; }
+  body.high-contrast .delta-neg { color: #ff5252; }
+  body.high-contrast .delta-rem { color: #ccc; }
+  body.high-contrast #status { color: #ccc; }
+  body.high-contrast #restart-btn { border-color: #fff; color: #fff; }
+  body.high-contrast #restart-btn.voted { border-color: #00e5ff; color: #00e5ff; background: rgba(0,229,255,0.15); }
+  body.high-contrast #settings-panel { background: #000; border: 2px solid #fff; }
+  body.high-contrast .setting-option { background: #000; border-color: #fff; color: #fff; }
+  body.high-contrast .setting-option.active { border-color: #00e5ff; color: #00e5ff; background: rgba(0,229,255,0.15); }
+  body.high-contrast #overlay { background: rgba(0,0,0,0.97); }
+  body.high-contrast #overlay h2 { color: #00e5ff; }
+  body.high-contrast #overlay p { color: #fff; }
+  body.high-contrast #game-over-box { color: #00e5ff; }
+
+  /* ══════════════════════════════════════════════════════════
+     WIĘKSZA CZCIONKA (tylko telefon, opcjonalny)
+     ══════════════════════════════════════════════════════════ */
+  body.large-font table { font-size: 17px; }
+  body.large-font th, body.large-font td { padding: 11px 10px; font-size: 17px; }
+  body.large-font td.label, body.large-font th.label { font-size: 15px; }
+  body.large-font tr.section-row td { font-size: 13px; }
+  body.large-font .delta-pos, body.large-font .delta-neg, body.large-font .delta-rem { font-size: 12px; }
+  body.large-font #turn-banner { font-size: 16px; }
+  body.large-font #rolls-left { font-size: 15px; }
+  body.large-font #roll-btn { font-size: 17px; }
+  body.large-font h1 { font-size: 22px; }
+  body.large-font .setting-option { font-size: 14px; }
 
   /* ── Dolny pasek ──────────────────────────────────────────── */
   #bottom-bar {
@@ -349,7 +484,7 @@
   <div id="header-row">
     <button id="home-btn" title="Menu główne">⌂</button>
     <h1>Kości</h1>
-    <div class="header-spacer"></div>
+    <button id="settings-btn" title="Ustawienia">⚙</button>
   </div>
   <div id="turn-banner"></div>
 
@@ -358,6 +493,18 @@
   <div id="controls">
     <button id="roll-btn" disabled>🎲 Rzuć</button>
     <span id="rolls-left"></span>
+  </div>
+</div>
+
+<div id="settings-panel">
+  <h3>Ustawienia</h3>
+  <div class="setting-option" id="opt-contrast" data-setting="contrast">
+    <span class="setting-label"><span class="setting-icon">☀️</span>Wysoki kontrast</span>
+    <span class="setting-toggle"></span>
+  </div>
+  <div class="setting-option" id="opt-fontsize" data-setting="fontsize">
+    <span class="setting-label"><span class="setting-icon">🔠</span>Większa czcionka</span>
+    <span class="setting-toggle"></span>
   </div>
 </div>
 
@@ -706,6 +853,53 @@ socket.on('restart_votes', ({ count }) => {
 });
 
 render();
+
+// ══════════════════════════════════════════════════════════════════════════════
+// USTAWIENIA — tylko wersja telefoniczna (przycisk ukryty na desktopie przez CSS)
+// Wysoki kontrast + większa czcionka, zapisywane w localStorage
+// ══════════════════════════════════════════════════════════════════════════════
+const settingsBtn    = document.getElementById('settings-btn');
+const settingsPanel  = document.getElementById('settings-panel');
+const optContrast    = document.getElementById('opt-contrast');
+const optFontSize    = document.getElementById('opt-fontsize');
+
+function applySetting(key, className, on) {
+  document.body.classList.toggle(className, on);
+  localStorage.setItem(key, on ? '1' : '0');
+}
+
+settingsBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  settingsPanel.classList.toggle('open');
+});
+
+document.addEventListener('click', (e) => {
+  if (!settingsPanel.contains(e.target) && e.target !== settingsBtn) {
+    settingsPanel.classList.remove('open');
+  }
+});
+
+optContrast.addEventListener('click', () => {
+  const on = !optContrast.classList.contains('active');
+  optContrast.classList.toggle('active', on);
+  applySetting('kosci-high-contrast', 'high-contrast', on);
+});
+
+optFontSize.addEventListener('click', () => {
+  const on = !optFontSize.classList.contains('active');
+  optFontSize.classList.toggle('active', on);
+  applySetting('kosci-large-font', 'large-font', on);
+});
+
+// Przywróć zapisane ustawienia
+if (localStorage.getItem('kosci-high-contrast') === '1') {
+  document.body.classList.add('high-contrast');
+  optContrast.classList.add('active');
+}
+if (localStorage.getItem('kosci-large-font') === '1') {
+  document.body.classList.add('large-font');
+  optFontSize.classList.add('active');
+}
 </script>
 </body>
 </html>
