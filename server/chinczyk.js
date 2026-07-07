@@ -3,19 +3,27 @@
 // ═══════════════════════════════════════════════════════════
 // TRASA — identyczna jak w kliencie (40 pól)
 // ═══════════════════════════════════════════════════════════
-// Trasa 40 pól — biegnie środkiem ramion krzyża, omija rogi z bazami.
+// Trasa 40 pól — symetryczny krzyż. Każda ćwiartka to obrót
+// tej samej lokalnej ścieżki o 90°, biegnie o 1 pole od środka
+// w każdym ramieniu, omija bazy w rogach.
 const TRACK = (function(){
   const T=[];
-  for(let r=10;r>=6;r--) T.push([6,r]);  // 0..4
-  for(let c=7;c<=10;c++) T.push([c,6]);  // 5..8
-  T.push([10,5]);                         // 9
-  for(let r=4;r>=0;r--) T.push([10,r]);  // 10..14
-  for(let c=9;c>=5;c--) T.push([c,0]);   // 15..19
-  for(let c=4;c>=0;c--) T.push([c,0]);   // 20..24
-  for(let r=1;r<=5;r++) T.push([0,r]);   // 25..29
-  T.push([0,6]);                          // 30
-  for(let r=7;r<=10;r++) T.push([0,r]);  // 31..34
-  for(let c=1;c<=5;c++) T.push([c,10]); // 35..39
+  // RED (0..9)
+  for(let r=10;r>=6;r--) T.push([6,r]);   // 0..4:  (6,10)..(6,6)
+  for(let c=7;c<=10;c++) T.push([c,6]);   // 5..8:  (7,6)..(10,6)
+  T.push([10,5]);                          // 9
+  // BLUE (10..19)
+  for(let c=10;c>=6;c--) T.push([c,4]);   // 10..14:(10,4)..(6,4)
+  for(let r=3;r>=0;r--) T.push([6,r]);    // 15..18:(6,3)..(6,0)
+  T.push([5,0]);                           // 19
+  // YELLOW (20..29)
+  for(let r=0;r<=4;r++) T.push([4,r]);    // 20..24:(4,0)..(4,4)
+  for(let c=3;c>=0;c--) T.push([c,4]);    // 25..28:(3,4)..(0,4)
+  T.push([0,5]);                           // 29
+  // GREEN (30..39)
+  for(let c=0;c<=4;c++) T.push([c,6]);    // 30..34:(0,6)..(4,6)
+  for(let r=7;r<=10;r++) T.push([4,r]);   // 35..38:(4,7)..(4,10)
+  T.push([5,10]);                          // 39
   return T;
 })();
 
@@ -118,11 +126,9 @@ function applyMove(game, color, pieceId) {
     }
   }
 
-  // Sprawdź wygraną: wszystkie 4 pionki w domu (homeStart..homeStart+3) lub meta (56)
-  const cfg      = COLOR_CFG[color];
-  const h        = cfg.homeOffset;
-  const allDone  = game.pieces[color].every(p => p.pos === 56 || (p.pos >= h && p.pos < h + 4));
-  // Wygrywa gdy wszystkie 4 na ostatnim slocie domu lub w meta
+  // Sprawdź wygraną: wszystkie 4 pionki w domu (na ostatnim slocie) lub w mecie
+  const cfg = COLOR_CFG[color];
+  const h   = cfg.homeOffset;
   const won = game.pieces[color].every(p => p.pos === 56 || p.pos === h + 3);
   if (won) {
     game.winner = color;
@@ -285,13 +291,13 @@ module.exports = function registerChinczyk(io) {
       }
 
       // Po ruchu zawsze zeruj dice i movable.
-      // Jeśli był 6 — gracz musi rzucić ponownie (dice=null, mustRollAgain=true sygnalizuje UI)
+      // Jeśli był 6 — gracz musi rzucić ponownie (dice=null, tura się nie zmienia)
       game.dice          = null;
       game.movablePieces = [];
 
       if (hadSix) {
         // Gracz rzuca ponownie — tura się nie zmienia, dice jest null gotowe na rzut
-        game.mustRollAgain = false; // zresetuj — rzut już "zarobiony", teraz czeka na roll
+        game.mustRollAgain = false;
         broadcastState();
       } else {
         game.mustRollAgain = false;
