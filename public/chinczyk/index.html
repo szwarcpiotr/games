@@ -195,6 +195,7 @@ const restartBtn = document.getElementById('restart-btn');
 // STAN
 // ══════════════════════════════════════════════════════════
 let myColor=null, myIsPlayer=false, myRestartVote=false, classicMode=false;
+let pendingTurnEnd=false;
 let state={phase:'waiting',players:[],pieces:{},turnIndex:0,dice:null,movablePieces:[],mustRollAgain:false,winner:null};
 let CELL=40;
 
@@ -419,7 +420,11 @@ function handleClick(clientX,clientY){
     if(!piece) continue;
     const pos=piecePx(piece);
     if(!pos) continue;
-    if(Math.hypot(gx-pos.x,gy-pos.y)<=hitR){socket.emit('move',{pieceId:id});return;}
+    if(Math.hypot(gx-pos.x,gy-pos.y)<=hitR){
+      pendingTurnEnd=(state.dice!==6);
+      socket.emit('move',{pieceId:id});
+      return;
+    }
   }
 }
 boardCanvas.addEventListener('click',e=>handleClick(e.clientX,e.clientY));
@@ -448,7 +453,7 @@ function updateBanner(){
   }
 }
 function updateRollBtn(){
-  rollBtn.disabled=!(isMyTurn()&&(state.dice===null||state.mustRollAgain));
+  rollBtn.disabled=!(isMyTurn()&&(state.dice===null||state.mustRollAgain)&&!pendingTurnEnd);
   if(state.phase==='playing'){
     if(state.dice&&!state.mustRollAgain&&state.movablePieces?.length) rollInfo.textContent='Wybierz pionka';
     else if(state.mustRollAgain) rollInfo.textContent='🎲 Rzuć znów!';
@@ -479,6 +484,7 @@ socket.on('lobby',({players})=>{
 startBtn.addEventListener('click',()=>socket.emit('start_game'));
 socket.on('state',snap=>{
   state=snap;
+  if(state.dice!==null||!isMyTurn()) pendingTurnEnd=false;
   if(state.phase==='playing'||state.phase==='over') overlay.classList.add('hidden');
   render();
   if(snap.dice){diceDisp.classList.add('rolling');setTimeout(()=>diceDisp.classList.remove('rolling'),350);}
