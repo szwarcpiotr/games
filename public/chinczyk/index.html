@@ -6,274 +6,87 @@
 <title>Chińczyk</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-
 body {
-  background: #0a0a0f;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-height: 100vh;
-  min-height: 100dvh;
-  font-family: 'Courier New', monospace;
-  color: #e0e0e0;
-  user-select: none;
-  overscroll-behavior: none;
+  background:#0a0a0f; display:flex; flex-direction:column;
+  align-items:center; min-height:100vh; min-height:100dvh;
+  font-family:'Courier New',monospace; color:#e0e0e0;
+  user-select:none; overscroll-behavior:none;
 }
-
-/* ── TOP BAR ─────────────────────────────────────────────────────────── */
 #top-bar {
-  position: sticky; top: 0; z-index: 20;
-  background: #0a0a0f;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 12px 8px;
-  border-bottom: 1px solid #111;
-  gap: 8px;
+  position:sticky; top:0; z-index:20; background:#0a0a0f;
+  width:100%; display:flex; align-items:center;
+  justify-content:space-between; padding:10px 12px 8px;
+  border-bottom:1px solid #111; gap:8px;
 }
-
-#home-btn, #settings-btn {
-  background: rgba(255,255,255,0.08); border: 1px solid #333;
-  color: #aaa; font-size: 18px; min-width: 40px; min-height: 40px;
-  border-radius: 8px; cursor: pointer; display: flex;
-  align-items: center; justify-content: center;
-  transition: background .2s, color .2s; flex-shrink: 0;
+#home-btn,#settings-btn {
+  background:rgba(255,255,255,0.08); border:1px solid #333;
+  color:#aaa; font-size:18px; min-width:40px; min-height:40px;
+  border-radius:8px; cursor:pointer; display:flex;
+  align-items:center; justify-content:center;
+  transition:background .2s,color .2s; flex-shrink:0;
 }
-#home-btn:active, #settings-btn:active { background: rgba(255,255,255,0.18); color:#fff; }
-
-#settings-btn { visibility:hidden; pointer-events:none; }
-@media(max-width:639px){ #settings-btn { visibility:visible; pointer-events:auto; } }
-
-h1 {
-  font-size: clamp(15px,4.5vw,24px);
-  letter-spacing: clamp(3px,2vw,6px);
-  color: #4fc3f7;
-  text-transform: uppercase;
-  flex: 1; text-align: center;
-}
-
-/* ── TURN BANNER ─────────────────────────────────────────────────────── */
-#turn-banner {
-  width: 100%;
-  text-align: center;
-  padding: 5px 12px 2px;
-  font-size: clamp(11px,3vw,13px);
-  color: #888;
-  letter-spacing: .5px;
-  min-height: 22px;
-}
-#turn-banner.my-turn { color: #4fc3f7; font-weight: bold; }
-
-/* ── SETTINGS PANEL ──────────────────────────────────────────────────── */
-#settings-panel {
-  position: fixed; top: 58px; right: 12px;
-  background: #111820; border: 1px solid #2a3a4a;
-  border-radius: 12px; padding: 14px; width: 210px;
-  z-index: 45; display: none; flex-direction: column; gap: 9px;
-}
-#settings-panel.open { display: flex; }
-#settings-panel h3 { font-size: 11px; letter-spacing: 2px; color: #4fc3f7; text-transform: uppercase; margin-bottom: 3px; }
-
-.setting-option {
-  padding: 9px 12px; border: 1px solid #2a3a4a; border-radius: 8px;
-  cursor: pointer; background: #0d1520; color: #aaa;
-  font-family: 'Courier New', monospace; font-size: 12px; letter-spacing: 1px;
-  display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  transition: border-color .15s, background .15s, color .15s;
-}
-.setting-option.active { border-color: #4fc3f7; background: rgba(79,195,247,.1); color: #4fc3f7; }
-.setting-label { display:flex; align-items:center; gap:7px; }
-.setting-toggle { width:36px; height:20px; border-radius:10px; background:#222; position:relative; flex-shrink:0; transition:background .2s; }
-.setting-toggle::after { content:''; position:absolute; width:16px; height:16px; border-radius:50%; background:#888; top:2px; left:2px; transition:transform .2s,background .2s; }
-.setting-option.active .setting-toggle { background:rgba(79,195,247,.35); }
-.setting-option.active .setting-toggle::after { background:#4fc3f7; transform:translateX(16px); }
-
-/* ── BOARD CONTAINER ─────────────────────────────────────────────────── */
-#board-wrap {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 8px 0;
-  width: 100%;
-}
-
-canvas#board {
-  display: block;
-  touch-action: manipulation;
-  cursor: pointer;
-}
-
-/* ── DICE & CONTROLS ─────────────────────────────────────────────────── */
-#controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  padding: 8px 12px 6px;
-  width: 100%;
-}
-
-#dice-display {
-  width: clamp(48px,10vw,60px);
-  height: clamp(48px,10vw,60px);
-  border-radius: clamp(8px,2vw,11px);
-  background: linear-gradient(160deg, #fdfdff, #c9c9d6);
-  display: grid;
-  place-items: center;
-  box-shadow: 0 4px 12px rgba(0,0,0,.5);
-  flex-shrink: 0;
-  transition: transform .15s;
-}
-#dice-display.rolling { animation: diceShake .07s infinite; }
-@keyframes diceShake {
-  0%   { transform: rotate(-5deg) scale(1.05); }
-  50%  { transform: rotate(5deg)  scale(1.05); }
-  100% { transform: rotate(-5deg) scale(1.05); }
-}
-#dice-display svg .pip { fill: #1a1a2e; }
-
-#roll-btn {
-  background: #ef5350; color: #fff; border: none;
-  padding: 0 24px; height: 48px; border-radius: 10px;
-  font-family: inherit; font-size: clamp(13px,3.8vw,15px);
-  letter-spacing: 1px; cursor: pointer; font-weight: bold;
-  touch-action: manipulation;
-  transition: background .15s, transform .1s;
-  flex: 1; max-width: 200px;
-}
-#roll-btn:active:not(:disabled) { background: #ff7a76; transform: scale(.97); }
-#roll-btn:disabled { background: #2a1a1a; color: #554; cursor: not-allowed; }
-
-#roll-info {
-  font-size: clamp(10px,2.8vw,12px);
-  color: #666;
-  letter-spacing: .5px;
-  min-width: 70px;
-  text-align: center;
-}
-
-/* ── BOTTOM BAR ──────────────────────────────────────────────────────── */
-#bottom-bar {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 14px max(14px,env(safe-area-inset-bottom));
-  gap: 10px;
-  margin-top: auto;
-}
-#status { font-size: 11px; color: #555; letter-spacing: .5px; }
-
-#restart-btn {
-  display: none;
-  background: rgba(255,255,255,.06); border: 1px solid #333;
-  color: #666; font-family: inherit; font-size: 12px;
-  padding: 8px 14px; border-radius: 8px; cursor: pointer;
-  letter-spacing: .5px; touch-action: manipulation;
-  transition: background .15s, color .15s, border-color .15s;
-  white-space: nowrap; min-height: 36px;
-}
-#restart-btn.voted { border-color:#4fc3f7; color:#4fc3f7; background:rgba(79,195,247,.1); }
-#restart-btn:active { background: rgba(255,255,255,.12); }
-
-/* ── OVERLAY ─────────────────────────────────────────────────────────── */
-#overlay {
-  position: fixed; inset: 0;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  background: rgba(0,0,0,.88);
-  gap: 14px; z-index: 50;
-  padding: 32px 24px; text-align: center;
-}
-#overlay h2 { font-size: clamp(22px,7vw,30px); letter-spacing: 4px; color: #4fc3f7; }
-#overlay p { color: #aaa; font-size: clamp(12px,3.2vw,14px); max-width: 320px; }
-#overlay.hidden { display: none; }
-
-#start-btn {
-  background: #4fc3f7; color: #03222e; border: none;
-  padding: 14px 32px; border-radius: 10px;
-  font-family: inherit; font-size: clamp(14px,4vw,16px);
-  letter-spacing: 1px; cursor: pointer; font-weight: bold;
-  touch-action: manipulation; min-width: 180px; min-height: 50px;
-  transition: background .15s, transform .1s;
-}
-#start-btn:active:not(:disabled) { background: #7ad4fb; transform: scale(.97); }
-#start-btn:disabled { background: #1a3040; color: #3a6070; cursor: not-allowed; }
-
-/* ── GAME OVER BANNER ────────────────────────────────────────────────── */
-#game-over-box {
-  padding: 12px 16px;
-  text-align: center;
-  color: #4fc3f7;
-  font-size: clamp(13px,3.8vw,16px);
-  letter-spacing: .5px;
-  line-height: 1.6;
-  display: none;
-}
-
-/* ══════════════ TRYB KLASYCZNY (plansza) ══════════════ */
-body.classic-board #board-wrap { background: transparent; }
-
-/* ══════════════ WYSOKI KONTRAST ══════════════ */
-body.high-contrast { background: #000; color: #fff; }
-body.high-contrast #top-bar { background: #000; border-bottom: 1px solid #fff; }
-body.high-contrast h1, body.high-contrast #turn-banner.my-turn { color: #00e5ff; }
-body.high-contrast #home-btn, body.high-contrast #settings-btn { background:#000; border:2px solid #fff; color:#fff; }
-body.high-contrast #roll-btn { background: #ff1744; }
-body.high-contrast #roll-btn:disabled { background:#330000; color:#995; }
-body.high-contrast #settings-panel { background:#000; border:2px solid #fff; }
-body.high-contrast .setting-option { background:#000; border-color:#fff; color:#fff; }
-body.high-contrast .setting-option.active { border-color:#00e5ff; color:#00e5ff; background:rgba(0,229,255,.15); }
-body.high-contrast #overlay { background:rgba(0,0,0,.97); }
-body.high-contrast #overlay h2 { color:#00e5ff; }
-body.high-contrast #game-over-box { color:#00e5ff; }
-
-/* ══════════════ WIĘKSZA CZCIONKA ══════════════ */
-body.large-font h1 { font-size: 22px; }
-body.large-font #turn-banner { font-size: 16px; }
-body.large-font #roll-btn { font-size: 17px; }
-body.large-font #roll-info { font-size: 14px; }
-body.large-font .setting-option { font-size: 14px; }
+#home-btn:active,#settings-btn:active{background:rgba(255,255,255,0.18);color:#fff;}
+#settings-btn{visibility:hidden;pointer-events:none;}
+@media(max-width:639px){#settings-btn{visibility:visible;pointer-events:auto;}}
+h1{font-size:clamp(15px,4.5vw,24px);letter-spacing:clamp(3px,2vw,6px);color:#4fc3f7;text-transform:uppercase;flex:1;text-align:center;}
+#turn-banner{width:100%;text-align:center;padding:5px 12px 2px;font-size:clamp(11px,3vw,13px);color:#888;letter-spacing:.5px;min-height:22px;}
+#turn-banner.my-turn{color:#4fc3f7;font-weight:bold;}
+#settings-panel{position:fixed;top:58px;right:12px;background:#111820;border:1px solid #2a3a4a;border-radius:12px;padding:14px;width:200px;z-index:45;display:none;flex-direction:column;gap:9px;}
+#settings-panel.open{display:flex;}
+#settings-panel h3{font-size:11px;letter-spacing:2px;color:#4fc3f7;text-transform:uppercase;margin-bottom:3px;}
+.setting-option{padding:9px 12px;border:1px solid #2a3a4a;border-radius:8px;cursor:pointer;background:#0d1520;color:#aaa;font-family:'Courier New',monospace;font-size:12px;letter-spacing:1px;display:flex;align-items:center;justify-content:space-between;gap:10px;transition:border-color .15s,background .15s,color .15s;}
+.setting-option.active{border-color:#4fc3f7;background:rgba(79,195,247,.1);color:#4fc3f7;}
+.setting-label{display:flex;align-items:center;gap:7px;}
+.setting-toggle{width:36px;height:20px;border-radius:10px;background:#222;position:relative;flex-shrink:0;transition:background .2s;}
+.setting-toggle::after{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:#888;top:2px;left:2px;transition:transform .2s,background .2s;}
+.setting-option.active .setting-toggle{background:rgba(79,195,247,.35);}
+.setting-option.active .setting-toggle::after{background:#4fc3f7;transform:translateX(16px);}
+#board-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:6px;width:100%;}
+canvas#board{display:block;touch-action:manipulation;cursor:pointer;}
+#controls{display:flex;align-items:center;justify-content:center;gap:14px;padding:8px 12px 6px;width:100%;}
+#dice-display{width:clamp(48px,10vw,60px);height:clamp(48px,10vw,60px);border-radius:clamp(8px,2vw,11px);background:linear-gradient(160deg,#fdfdff,#c9c9d6);display:grid;place-items:center;box-shadow:0 4px 12px rgba(0,0,0,.5);flex-shrink:0;}
+#dice-display.rolling{animation:diceShake .07s infinite;}
+@keyframes diceShake{0%{transform:rotate(-5deg) scale(1.05);}50%{transform:rotate(5deg) scale(1.05);}100%{transform:rotate(-5deg) scale(1.05);}}
+#dice-display svg .pip{fill:#1a1a2e;}
+#roll-btn{background:#ef5350;color:#fff;border:none;padding:0 24px;height:48px;border-radius:10px;font-family:inherit;font-size:clamp(13px,3.8vw,15px);letter-spacing:1px;cursor:pointer;font-weight:bold;touch-action:manipulation;transition:background .15s,transform .1s;flex:1;max-width:200px;}
+#roll-btn:active:not(:disabled){background:#ff7a76;transform:scale(.97);}
+#roll-btn:disabled{background:#2a1a1a;color:#554;cursor:not-allowed;}
+#roll-info{font-size:clamp(10px,2.8vw,12px);color:#666;letter-spacing:.5px;min-width:70px;text-align:center;}
+#bottom-bar{width:100%;display:flex;align-items:center;justify-content:space-between;padding:8px 14px max(14px,env(safe-area-inset-bottom));gap:10px;margin-top:auto;}
+#status{font-size:11px;color:#555;letter-spacing:.5px;}
+#restart-btn{display:none;background:rgba(255,255,255,.06);border:1px solid #333;color:#666;font-family:inherit;font-size:12px;padding:8px 14px;border-radius:8px;cursor:pointer;letter-spacing:.5px;touch-action:manipulation;transition:background .15s,color .15s,border-color .15s;white-space:nowrap;min-height:36px;}
+#restart-btn.voted{border-color:#4fc3f7;color:#4fc3f7;background:rgba(79,195,247,.1);}
+#restart-btn:active{background:rgba(255,255,255,.12);}
+#overlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.88);gap:14px;z-index:50;padding:32px 24px;text-align:center;}
+#overlay h2{font-size:clamp(22px,7vw,30px);letter-spacing:4px;color:#4fc3f7;}
+#overlay p{color:#aaa;font-size:clamp(12px,3.2vw,14px);max-width:320px;}
+#overlay.hidden{display:none;}
+#start-btn{background:#4fc3f7;color:#03222e;border:none;padding:14px 32px;border-radius:10px;font-family:inherit;font-size:clamp(14px,4vw,16px);letter-spacing:1px;cursor:pointer;font-weight:bold;touch-action:manipulation;min-width:180px;min-height:50px;transition:background .15s,transform .1s;}
+#start-btn:active:not(:disabled){background:#7ad4fb;transform:scale(.97);}
+#start-btn:disabled{background:#1a3040;color:#3a6070;cursor:not-allowed;}
+#game-over-box{padding:12px 16px;text-align:center;color:#4fc3f7;font-size:clamp(13px,3.8vw,16px);letter-spacing:.5px;line-height:1.6;display:none;}
 </style>
 </head>
 <body>
-
 <div id="overlay">
   <h2>🎲 CHIŃCZYK</h2>
   <p id="overlay-msg">Łączenie z serwerem…</p>
   <button id="start-btn" disabled>Zacznij grę</button>
 </div>
-
 <div id="top-bar">
   <button id="home-btn" title="Menu główne">⌂</button>
   <h1>Chińczyk</h1>
   <button id="settings-btn" title="Ustawienia">⚙</button>
 </div>
-
 <div id="settings-panel">
   <h3>Ustawienia</h3>
-  <div class="setting-option" id="opt-classic" data-setting="classic">
-    <span class="setting-label"><span class="setting-icon">🎨</span>Klasyczna plansza</span>
-    <span class="setting-toggle"></span>
-  </div>
-  <div class="setting-option" id="opt-contrast" data-setting="contrast">
-    <span class="setting-label"><span class="setting-icon">☀️</span>Wysoki kontrast</span>
-    <span class="setting-toggle"></span>
-  </div>
-  <div class="setting-option" id="opt-fontsize" data-setting="fontsize">
-    <span class="setting-label"><span class="setting-icon">🔠</span>Większa czcionka</span>
+  <div class="setting-option" id="opt-classic">
+    <span class="setting-label"><span>🎨</span>Klasyczna plansza</span>
     <span class="setting-toggle"></span>
   </div>
 </div>
-
 <div id="turn-banner"></div>
-
-<div id="board-wrap">
-  <canvas id="board"></canvas>
-</div>
-
+<div id="board-wrap"><canvas id="board"></canvas></div>
 <div id="controls">
   <div id="dice-display">
     <svg id="dice-svg" viewBox="0 0 100 100" width="68%" height="68%"></svg>
@@ -281,9 +94,7 @@ body.large-font .setting-option { font-size: 14px; }
   <button id="roll-btn" disabled>🎲 Rzuć</button>
   <span id="roll-info"></span>
 </div>
-
 <div id="game-over-box"></div>
-
 <div id="bottom-bar">
   <span id="status"></span>
   <button id="restart-btn">↺ Restart (0/2)</button>
@@ -291,37 +102,78 @@ body.large-font .setting-option { font-size: 14px; }
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-// ══════════════════════════════════════════════════════════════════════════════
-// STAŁE PLANSZY
-// ══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
+// KOLORY
+// ══════════════════════════════════════════════════════════
 const COLORS = ['red','blue','yellow','green'];
-
 const COLOR_CFG = {
-  red:    { startField:0,  homeOffset:40, baseIds:[0,1,2,3],    label:'Czerwony' },
-  blue:   { startField:10, homeOffset:44, baseIds:[4,5,6,7],    label:'Niebieski' },
-  yellow: { startField:20, homeOffset:48, baseIds:[8,9,10,11],  label:'Żółty' },
-  green:  { startField:30, homeOffset:52, baseIds:[12,13,14,15], label:'Zielony' },
+  red:    {startField:0,  homeOffset:40, label:'Czerwony'},
+  blue:   {startField:10, homeOffset:44, label:'Niebieski'},
+  yellow: {startField:20, homeOffset:48, label:'Żółty'},
+  green:  {startField:30, homeOffset:52, label:'Zielony'},
 };
-
-// Paleta neonowa (domyślna)
 const NEON = {
-  red:    { main:'#ff4444', glow:'rgba(255,68,68,0.7)',    light:'#ff8888', dark:'#aa0000' },
-  blue:   { main:'#4fc3f7', glow:'rgba(79,195,247,0.7)',  light:'#90dfff', dark:'#0277bd' },
-  yellow: { main:'#ffd740', glow:'rgba(255,215,64,0.7)',  light:'#ffe57f', dark:'#c49000' },
-  green:  { main:'#69f0ae', glow:'rgba(105,240,174,0.7)', light:'#b9ffd1', dark:'#00843d' },
+  red:    {main:'#ff4040',glow:'rgba(255,64,64,0.6)',   light:'#ff9090',dark:'#990000'},
+  blue:   {main:'#4fc3f7',glow:'rgba(79,195,247,0.6)', light:'#90dfff',dark:'#0277bd'},
+  yellow: {main:'#ffd740',glow:'rgba(255,215,64,0.6)', light:'#ffe580',dark:'#b8860b'},
+  green:  {main:'#00e676',glow:'rgba(0,230,118,0.6)',  light:'#80ffb8',dark:'#007a3d'},
+};
+const CLASSIC_PAL = {
+  red:    {main:'#c62828',glow:'rgba(198,40,40,0.5)',   light:'#ef9a9a',dark:'#7f0000'},
+  blue:   {main:'#1565c0',glow:'rgba(21,101,192,0.5)', light:'#82b1ff',dark:'#003c8f'},
+  yellow: {main:'#f9a825',glow:'rgba(249,168,37,0.5)', light:'#ffd95a',dark:'#a07800'},
+  green:  {main:'#2e7d32',glow:'rgba(46,125,50,0.5)',  light:'#a5d6a7',dark:'#005005'},
 };
 
-// Paleta klasyczna
-const CLASSIC = {
-  red:    { main:'#d32f2f', glow:'rgba(211,47,47,0.5)',   light:'#ef9a9a', dark:'#7f0000' },
-  blue:   { main:'#1565c0', glow:'rgba(21,101,192,0.5)',  light:'#82b1ff', dark:'#003c8f' },
-  yellow: { main:'#f9a825', glow:'rgba(249,168,37,0.5)',  light:'#ffd95a', dark:'#c17900' },
-  green:  { main:'#2e7d32', glow:'rgba(46,125,50,0.5)',   light:'#a5d6a7', dark:'#005005' },
+// ══════════════════════════════════════════════════════════
+// TRASA — 40 pól, zweryfikowane bez kolizji z domami
+// siatka 11×11, [col, row], indeks 0..10
+// ══════════════════════════════════════════════════════════
+const TRACK = (function(){
+  const T=[];
+  // Gałąź RED (pola 0-9): col=6 w górę, potem row=6 w prawo, narożnik [10,5]
+  for(let r=10;r>=6;r--) T.push([6,r]);   // 0..4: [6,10]..[6,6]
+  for(let c=7;c<=10;c++) T.push([c,6]);   // 5..8: [7,6]..[10,6]
+  T.push([10,5]);                          // 9
+  // Gałąź BLUE (pola 10-19): col=10 w górę, potem row=0 w lewo
+  for(let r=4;r>=0;r--) T.push([10,r]);   // 10..14: [10,4]..[10,0]
+  for(let c=9;c>=5;c--) T.push([c,0]);    // 15..19: [9,0]..[5,0]
+  // Gałąź YELLOW (pola 20-29): row=0 w lewo, potem col=0 w dół
+  for(let c=4;c>=0;c--) T.push([c,0]);   // 20..24: [4,0]..[0,0]
+  for(let r=1;r<=5;r++) T.push([0,r]);   // 25..29: [0,1]..[0,5]
+  // Gałąź GREEN (pola 30-39): col=0 w dół, potem row=10 w prawo
+  for(let r=6;r<=10;r++) T.push([0,r]);  // 30..34: [0,6]..[0,10]
+  for(let c=1;c<=5;c++) T.push([c,10]); // 35..39: [1,10]..[5,10]
+  return T;
+})();
+
+// ══════════════════════════════════════════════════════════
+// DOMY (ścieżki do centrum), slot 0=wejście, slot 3=centrum
+// RED wchodzi z [5,10] (pole 39) → dom col=5 w górę
+// BLUE wchodzi z [10,5] (pole 9)  → dom row=5 w lewo
+// YELLOW wchodzi z [5,0] (pole 19)→ dom col=5 w dół
+// GREEN wchodzi z [0,5] (pole 29) → dom row=5 w prawo
+// ══════════════════════════════════════════════════════════
+const HOME_COORDS = {
+  red:    [[5,9],[5,8],[5,7],[5,6]],
+  blue:   [[9,5],[8,5],[7,5],[6,5]],
+  yellow: [[5,1],[5,2],[5,3],[5,4]],
+  green:  [[1,5],[2,5],[3,5],[4,5]],
 };
 
-// ══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
+// BAZY (rogi planszy, 2×2)
+// ══════════════════════════════════════════════════════════
+const BASE_COORDS = {
+  red:    [[8,8],[9,8],[8,9],[9,9]],
+  blue:   [[8,1],[9,1],[8,2],[9,2]],
+  yellow: [[1,1],[2,1],[1,2],[2,2]],
+  green:  [[1,8],[2,8],[1,9],[2,9]],
+};
+
+// ══════════════════════════════════════════════════════════
 // DOM
-// ══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 const overlay    = document.getElementById('overlay');
 const overlayMsg = document.getElementById('overlay-msg');
 const startBtn   = document.getElementById('start-btn');
@@ -336,839 +188,328 @@ const statusEl   = document.getElementById('status');
 const gameOverBox= document.getElementById('game-over-box');
 const restartBtn = document.getElementById('restart-btn');
 
-// ══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 // STAN
-// ══════════════════════════════════════════════════════════════════════════════
-let myColor   = null;
-let myIsPlayer= false;
-let myRestartVote = false;
-let classicMode   = false;
+// ══════════════════════════════════════════════════════════
+let myColor=null, myIsPlayer=false, myRestartVote=false, classicMode=false;
+let state={phase:'waiting',players:[],pieces:{},turnIndex:0,dice:null,movablePieces:[],mustRollAgain:false,winner:null};
+let CELL=40;
 
-let state = {
-  phase: 'waiting',
-  players: [],
-  pieces: {},
-  turnIndex: 0,
-  dice: null,
-  movablePieces: [],
-  mustRollAgain: false,
-  winner: null,
-};
-
-// ══════════════════════════════════════════════════════════════════════════════
-// GEOMETRY – obliczana przy resize
-// ══════════════════════════════════════════════════════════════════════════════
-let GEO = {};
-
-function computeGeometry() {
-  const wrap = document.getElementById('board-wrap');
-  const availW = wrap.clientWidth  - 16;
-  const availH = wrap.clientHeight - 8;
-  const size   = Math.min(availW, availH, 520);
-
-  boardCanvas.style.width  = size + 'px';
-  boardCanvas.style.height = size + 'px';
-  const dpr = window.devicePixelRatio || 1;
-  boardCanvas.width  = size * dpr;
-  boardCanvas.height = size * dpr;
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-  const S  = size;
-  const C  = S / 11;   // rozmiar komórki: plansza 11×11
-  const R  = C * 0.38; // promień pionka
-
-  // Środkowy kwadrat: 3×3 w centrum (kolumny 4-6, wiersze 4-6 → 0-indexed)
-  GEO = { S, C, R, dpr };
-
-  // Mapowanie pól planszy na współrzędne pikselowe
-  // Wspólna trasa: 40 pól, numerowane 0–39
-  // Generujemy ją zgodnie z klasycznym Chińczykiem:
-  // Red start=0 at (6,10) bottom-right of left column ... etc.
-  // Używamy klasycznego układu 11×11:
-  GEO.fieldCoords = buildFieldCoords(S, C);
-  GEO.homeCoords  = buildHomeCoords(S, C);
-  GEO.baseCoords  = buildBaseCoords(S, C);
+// ══════════════════════════════════════════════════════════
+// GEOMETRIA
+// ══════════════════════════════════════════════════════════
+function computeGeometry(){
+  const wrap=document.getElementById('board-wrap');
+  const avail=Math.min(wrap.clientWidth-12, wrap.clientHeight-4, 540);
+  const size=Math.max(avail,200);
+  CELL=size/11;
+  const dpr=window.devicePixelRatio||1;
+  boardCanvas.style.width=size+'px';
+  boardCanvas.style.height=size+'px';
+  boardCanvas.width=size*dpr;
+  boardCanvas.height=size*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
 }
 
-// Klasyczny układ trasy Chińczyka na siatce 11×11 (col, row) 0-indexed
-// Trasa biegnie: RED start (col=6,row=10) → w górę lewą kolumną → centrum → itd.
-function boardPath() {
-  // Zwraca tablicę 40 par [col, row] (układ siatki 11×11)
-  // Zaczynamy od pola 0 (red start) i idziemy zgodnie z ruchem wskazówek zegara
-  const path = [];
-  // Dolna prawa gałąź (czerwona): col 6, rows 10→6
-  for (let r=10;r>=6;r--) path.push([6,r]);      // 0..4
-  // Dolny środek: row 6, cols 7→10
-  for (let c=7;c<=10;c++) path.push([c,6]);       // 5..8 – ale to wychodzi za planszę?
-  // Korekta: plansza 11×11 → kolumny 0..10, wiersze 0..10
-  // Standardowy Chińczyk na siatce 11×11:
-  // Każda gałąź ma 5 pól w poziomie/pionie + 1 pole narożne
-  // Czystsza implementacja przez jawne wyliczenie:
-  return buildPath11();
+function cx(col){return col*CELL+CELL*0.5;}
+function cy(row){return row*CELL+CELL*0.5;}
+
+function piecePx(piece){
+  const cfg=COLOR_CFG[piece.color];
+  if(piece.pos===-1){
+    const[c,r]=BASE_COORDS[piece.color][piece.id];
+    return{x:cx(c),y:cy(r)};
+  }
+  if(piece.pos===56) return null;
+  const h=cfg.homeOffset;
+  if(piece.pos>=h&&piece.pos<h+4){
+    const[c,r]=HOME_COORDS[piece.color][piece.pos-h];
+    return{x:cx(c),y:cy(r)};
+  }
+  if(piece.pos>=0&&piece.pos<TRACK.length){
+    const[c,r]=TRACK[piece.pos];
+    return{x:cx(c),y:cy(r)};
+  }
+  return null;
 }
 
-function buildPath11() {
-  // Siatka 11×11, trasa 40 pól, start RED = (6,10)
-  // Zgodnie z ruchem wskazówek zegara:
-  const path = [];
-  // Prawa gałąź (dół → góra, col=6): rows 10..6
-  for(let r=10;r>=6;r--) path.push([6,r]);
-  // Dolny pas (lewo → prawo, row=6): cols 7..10 — BŁĄD, idziemy PRAWĄ stroną
-  // Poprawka: trasa standardowa:
-  // Segment 1: red start, idziemy lewym brzegiem (col=6) w górę rows 10→6 → 5 pól (0-4)
-  // Narożnik u góry (6,5) → idziemy w prawo row=5 cols 7..10 → 4 pola (5-8) → do (10,5)
-  // itd.  — ta logika jest żmudna, robimy ją raz poprawnie:
-  path.length = 0;
-  // Zgodnie z klasycznym Chińczykiem 11×11, trasa biegnie:
-  // RED:   start (6,10), wyjście na trasę z (6,10) w kierunku (6,9)→(6,6)→narożnik→pas dolny
-  // Właściwy algorytm:
-  //
-  //  S = (6,10) RED start
-  //  Idziemy w górę col=6: (6,10),(6,9),(6,8),(6,7),(6,6)          → 0..4
-  //  Narożnik (6,5) skręt w prawo, idziemy row=5: (7,5),(8,5),(9,5),(10,5) → 5..8 ?
-  //  Ale to nie jest 11 kolumn 0..10 — pomyłka. Plansza 11×11 = cols 0..10, rows 0..10
-  //  Standardowy rozkład:
-  //    Prawa kolumna góra: (6,4),(6,3),(6,2),(6,1),(6,0)            → narożnik góry
-  //    itd.
-  //
-  // Zamiast liczyć ręcznie, użyję sprawdzonego przepisu z popularnych implementacji:
+// ══════════════════════════════════════════════════════════
+// RYSOWANIE
+// ══════════════════════════════════════════════════════════
+function pal(){return classicMode?CLASSIC_PAL:NEON;}
 
-  // Segmenty zgodnie z ruchem wskazówek zegara (startujemy od RED na (6,10)):
-  // [kierunek, ilość kroków]
-  // UP    = [0,-1]
-  // RIGHT = [1,0]
-  // DOWN  = [0,1]
-  // LEFT  = [-1,0]
+function rr(x,y,w,h,r){ctx.beginPath();ctx.roundRect(x,y,w,h,r);}
 
-  const segs = [
-    // 1. Czerwona prawa kolumna: w górę 5 pól
-    {dx:0, dy:-1, n:5, start:[6,10]},
-    // 2. Górny pas: w prawo 1 + skręt narożnik
-    {dx:1, dy:0,  n:1, start:[6,5]},
-    // 3. Górna prawa kolumna: w górę 5 pól
-    {dx:0, dy:-1, n:5, start:[7,5]},
-    // 4. Górny pas prawy: w lewo 1 + narożnik
-    {dx:-1,dy:0,  n:1, start:[7,0]},
-    // 5. BLUE start prawa kolumna: w lewo 5 pól (row=0)
-    {dx:-1,dy:0,  n:5, start:[6,0]},
-    // 6. Narożnik lewo-góra
-    {dx:0, dy:1,  n:1, start:[1,0]},
-    // 7. Lewa kolumna góra: w dół 5 pól
-    {dx:0, dy:1,  n:5, start:[1,1]},
-    // 8. Narożnik
-    {dx:-1,dy:0,  n:1, start:[1,6]},
-    // 9. YELLOW prawa kolumna: w prawo 5 pól — dolna
-    {dx:0, dy:1,  n:5, start:[0,6]},
-    // 10. Narożnik prawy dół
-    {dx:1, dy:0,  n:1, start:[0,11]}, // wykracza poza — korekta niżej
-    // ...
-  ];
-  // Ta metoda jest podatna na błędy. Zamiast tego użyjmy
-  // jawnej tablicy współrzędnych z klasycznego Chińczyka:
-  return hardcodedPath();
+function drawCell(col,row,fillStyle,strokeStyle,lw){
+  const x=col*CELL,y=row*CELL;
+  if(fillStyle){ctx.fillStyle=fillStyle;rr(x+1,y+1,CELL-2,CELL-2,4);ctx.fill();}
+  if(strokeStyle){ctx.strokeStyle=strokeStyle;ctx.lineWidth=lw||1;rr(x+1.5,y+1.5,CELL-3,CELL-3,4);ctx.stroke();}
 }
 
-function hardcodedPath() {
-  // Klasyczny Chińczyk 11×11 siatka, trasa 40 pól zgodnie z ruchem wskazówek zegara
-  // Pola numerowane 0..39, RED start = pole 0
-  return [
-    // RED start + prawa gałąź w górę (col=6, rows 10→6)
-    [6,10],[6,9],[6,8],[6,7],[6,6],
-    // Górna prawa gałąź w prawo (row=5, cols 6→10)
-    [6,5],[7,5],[8,5],[9,5],[10,5],
-    // BLUE start + prawa gałąź w dół (col=10 – zły, prawa=col=10 idzie w górę row 4→0)
-    // Korekta: trasa po prawej stronie idzie w górę (row maleje)
-    [10,4],[10,3],[10,2],[10,1],[10,0],
-    // Górna lewa gałąź idzie w lewo (row=0, cols 9→5)
-    [9,0],[8,0],[7,0],[6,0],[5,0],
-    // YELLOW start + trasa idzie w dół po lewej (col=4, rows 0→4)
-    [4,0],[4,1],[4,2],[4,3],[4,4],
-    // Dolna lewa idzie w lewo (row=5, cols 4→0)
-    [4,5],[3,5],[2,5],[1,5],[0,5],
-    // GREEN start + trasa idzie w dół (col=0, rows 6→10)
-    [0,6],[0,7],[0,8],[0,9],[0,10],
-    // Dolna prawa idzie w prawo (row=10, cols 1→5)  → z powrotem do RED
-    [1,10],[2,10],[3,10],[4,10],[5,10],
-  ];
-}
+function drawBoard(){
+  const S=CELL*11;
+  ctx.clearRect(0,0,S,S);
+  const p=pal();
 
-function buildFieldCoords(S, C) {
-  const path = hardcodedPath();
-  return path.map(([col, row]) => ({
-    x: col * C + C / 2,
-    y: row * C + C / 2,
-  }));
-}
+  if(classicMode){
+    // Tło całej planszy
+    ctx.fillStyle='#f2ede3'; ctx.fillRect(0,0,S,S);
+    // Krzyż planszy
+    ctx.fillStyle='#ddd5c4';
+    ctx.fillRect(4*CELL,0,3*CELL,S);
+    ctx.fillRect(0,4*CELL,S,3*CELL);
+  } else {
+    ctx.fillStyle='#0a0a0f'; ctx.fillRect(0,0,S,S);
+    // Subtelny krzyż
+    ctx.fillStyle='rgba(255,255,255,0.02)';
+    ctx.fillRect(4*CELL,0,3*CELL,S);
+    ctx.fillRect(0,4*CELL,S,3*CELL);
+  }
 
-function buildHomeCoords(S, C) {
-  // Dom każdego koloru: 4 pola wewnątrz planszy wzdłuż osi do centrum
-  // RED home:    col=6, rows 9→6 (idzie do centrum z dołu) — nie! Dom jest wewnątrz, w kierunku środka
-  // Standardowo: dom jest MIĘDZY trasą a centrum (środek = 5,5 czyli komórka 5×5)
-  // RED   home: col=6, rows 9..6  (po prawej, wchodzi z dołu przez pole 0)
-  // BLUE  home: col=9, rows 1..4  ? Nie — BLUE start = pole 10 = (10,4)
-  // Prościej: dom jest w gałęzi każdego koloru skierowanej do środka
-  //
-  // Wg klasycznej planszy 11×11:
-  // RED   home: row=9..6 col=5  (lewa kolumna wejścia) — własna ścieżka
-  // Właściwie:
-  //   RED   wchodzi z pola 39 (5,10) → home wzdłuż col=5 rows 9..6 → centrum
-  //   BLUE  wchodzi z pola 9  (10,5) → home wzdłuż row=5 cols 9..6 → centrum
-  //   YELLOW wchodzi z pola 19 (4,0) → home wzdłuż row=5... hmm
-  //
-  // Uproszczona ale poprawna interpretacja zgodna z hardcodedPath:
-  // RED start=pole0=(6,10), idzie w górę col=6. Dom RED jest w col=5 (obok), rows 9..6
-  // Faktycznie w klasycznym Chińczyku dom jest środkową kolumną/rzędem:
+  // Pola trasy
+  TRACK.forEach(([c,r],idx)=>{
+    const startColor={0:'red',10:'blue',20:'yellow',30:'green'}[idx];
+    if(classicMode){
+      drawCell(c,r,'#fffef8','#c4b89a',0.8);
+      if(startColor){
+        drawCell(c,r,p[startColor].main+'44',p[startColor].main,2);
+      }
+    } else {
+      drawCell(c,r,'rgba(255,255,255,0.06)',null);
+      if(startColor){
+        drawCell(c,r,p[startColor].glow.replace(/[\d.]+\)$/,'0.2)'),p[startColor].main,1.5);
+      }
+    }
+  });
 
-  return {
-    red:    [[5,9],[5,8],[5,7],[5,6]].map(([c,r])=>({x:c*C+C/2, y:r*C+C/2})),
-    blue:   [[9,5],[8,5],[7,5],[6,5]].map(([c,r])=>({x:c*C+C/2, y:r*C+C/2})),  // BŁĄD – te na trasie
-    yellow: [[5,1],[5,2],[5,3],[5,4]].map(([c,r])=>({x:c*C+C/2, y:r*C+C/2})),
-    green:  [[1,5],[2,5],[3,5],[4,5]].map(([c,r])=>({x:c*C+C/2, y:r*C+C/2})),
-  };
-}
+  // Ścieżki domowe
+  for(const color of COLORS){
+    HOME_COORDS[color].forEach(([c,r],i)=>{
+      if(classicMode){
+        const alpha=i===3?'cc':'55';
+        drawCell(c,r,p[color].main+alpha,p[color].main,i===3?2:1);
+      } else {
+        const a=0.08+i*0.08;
+        const fill=p[color].glow.replace(/[\d.]+\)$/,a+')');
+        drawCell(c,r,fill,p[color].main,i===3?2:0.8);
+        if(i<3){ctx.globalAlpha=0.4;rr(c*CELL+1.5,r*CELL+1.5,CELL-3,CELL-3,4);ctx.stroke();ctx.globalAlpha=1;}
+      }
+    });
+  }
 
-function buildHomeCoordsCorrected(S, C) {
-  // Dom musi być poza wspólną trasą, wewnątrz planszy, wzdłuż osi do centrum
-  // Trasa zajmuje: col 6 (rows 5-10), row 5 (cols 6-10), col 10 (rows 0-5),
-  //                row 0 (cols 4-10), col 4 (rows 0-5), row 5 (cols 0-4),
-  //                col 0 (rows 5-10), row 10 (cols 0-5)
-  //
-  // Dom RED:    col 5, rows 9..6    → [5,9],[5,8],[5,7],[5,6]
-  // Dom BLUE:   row 1, cols 9..6   → [9,1],[8,1],[7,1],[6,1]  (za krótko...)
-  //
-  // Klasyczny układ (zaufana implementacja):
-  // DOM RED:    [5,9],[5,8],[5,7],[5,6]
-  // DOM BLUE:   [9,5],[8,5],[7,5],[6,5]  ← te są na trasie! błąd w budowie trasy
-  //
-  // Problem: trasa w segmencie "górna prawa gałąź" używa row=5, cols 6→10
-  // → pola [6,5],[7,5],[8,5],[9,5],[10,5] są na trasie
-  // Dom blue nie może być tam. Musi być w innym miejscu.
-  //
-  // Rozwiązanie: dom na row=1 dla blue, col=9 dla yellow itp. – tj. "wewnętrzna" ścieżka
-  // Klasyczny układ faktycznie używa:
-  //   DOM RED:    row 5 lewy fragment, nieeeee
-  //
-  // Ostateczna poprawna implementacja:
-  return {
-    red:    [[5,9],[5,8],[5,7],[5,6]].map(([c,r])=>({x:c*C+C/2, y:r*C+C/2})),
-    blue:   [[9,1],[8,1],[7,1],[6,1]].map(([c,r])=>({x:c*C+C/2, y:r*C+C/2})),
-    yellow: [[1,1],[1,2],[1,3],[1,4]].map(([c,r])=>({x:c*C+C/2, y:r*C+C/2})),
-    green:  [[1,9],[2,9],[3,9],[4,9]].map(([c,r])=>({x:c*C+C/2, y:r*C+C/2})),
-  };
-}
+  // Bazy (rogi)
+  for(const color of COLORS){
+    const[c0,r0]=BASE_COORDS[color][0];
+    const bx=c0*CELL, by=r0*CELL;
+    if(classicMode){
+      ctx.fillStyle=p[color].main+'33'; rr(bx,by,CELL*2,CELL*2,8); ctx.fill();
+      ctx.strokeStyle=p[color].main; ctx.lineWidth=2; rr(bx,by,CELL*2,CELL*2,8); ctx.stroke();
+    } else {
+      ctx.fillStyle=p[color].glow.replace(/[\d.]+\)$/,'0.1)'); rr(bx,by,CELL*2,CELL*2,8); ctx.fill();
+      ctx.strokeStyle=p[color].main; ctx.lineWidth=1.5; rr(bx,by,CELL*2,CELL*2,8); ctx.stroke();
+    }
+    // Puste kółka w bazie
+    for(const[c,r] of BASE_COORDS[color]){
+      ctx.beginPath(); ctx.arc(cx(c),cy(r),CELL*0.28,0,Math.PI*2);
+      ctx.strokeStyle=p[color].main+(classicMode?'aa':'66');
+      ctx.lineWidth=1.2; ctx.stroke();
+    }
+  }
 
-function buildBaseCoords(S, C) {
-  // Bazy startowe w rogach planszy (3×3 obszar, 4 pola dla pionków)
-  // RED: prawy dolny róg  (cols 8-9, rows 8-9)
-  // BLUE: prawy górny     (cols 8-9, rows 1-2)
-  // YELLOW: lewy górny    (cols 1-2, rows 1-2)
-  // GREEN: lewy dolny     (cols 1-2, rows 8-9)
-  const offsets = [[0,0],[1,0],[0,1],[1,1]];
-  return {
-    red:    offsets.map(([dc,dr])=>({x:(8+dc)*C+C/2, y:(8+dr)*C+C/2})),
-    blue:   offsets.map(([dc,dr])=>({x:(8+dc)*C+C/2, y:(1+dr)*C+C/2})),
-    yellow: offsets.map(([dc,dr])=>({x:(1+dc)*C+C/2, y:(1+dr)*C+C/2})),
-    green:  offsets.map(([dc,dr])=>({x:(1+dc)*C+C/2, y:(8+dr)*C+C/2})),
-  };
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// RYSOWANIE PLANSZY
-// ══════════════════════════════════════════════════════════════════════════════
-function palette() {
-  return classicMode ? CLASSIC : NEON;
-}
-
-function drawBoard() {
-  const { S, C } = GEO;
-  if (!S) return;
-
-  ctx.clearRect(0, 0, S, S);
-
-  if (classicMode) drawBoardClassic();
-  else             drawBoardNeon();
+  // Centrum — 4 trójkąty
+  const mx=S/2, my=S/2;
+  for(let i=0;i<4;i++){
+    ctx.save(); ctx.translate(mx,my); ctx.rotate(i*Math.PI/2);
+    ctx.beginPath();
+    ctx.moveTo(0,-CELL*1.35);
+    ctx.lineTo(-CELL*0.8,0);
+    ctx.lineTo(CELL*0.8,0);
+    ctx.closePath();
+    const col=COLORS[i];
+    ctx.fillStyle=classicMode?p[col].main+'99':p[col].glow.replace(/[\d.]+\)$/,'0.5)');
+    ctx.fill();
+    ctx.restore();
+  }
 
   drawPieces();
 }
 
-function drawBoardNeon() {
-  const { S, C, R } = GEO;
-  const pal = NEON;
+function drawPieces(){
+  if(!state.players.length) return;
+  const R=CELL*0.34;
+  const p=pal();
 
-  // Tło
-  ctx.fillStyle = '#0a0a0f';
-  ctx.fillRect(0, 0, S, S);
-
-  // Siatka (subtelna)
-  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
-  ctx.lineWidth = 0.5;
-  for (let i=0;i<=11;i++) {
-    ctx.beginPath(); ctx.moveTo(i*C,0); ctx.lineTo(i*C,S); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0,i*C); ctx.lineTo(S,i*C); ctx.stroke();
-  }
-
-  // Trasa — tło pól
-  const path = hardcodedPath();
-  path.forEach(([col,row], idx) => {
-    const x = col*C, y = row*C;
-    ctx.fillStyle = 'rgba(255,255,255,0.04)';
-    roundRect(ctx, x+1, y+1, C-2, C-2, 4);
-    ctx.fill();
-
-    // Kolorowe pola startowe
-    const startColors = { 0:'red', 10:'blue', 20:'yellow', 30:'green' };
-    if (startColors[idx]) {
-      ctx.fillStyle = pal[startColors[idx]].glow.replace('0.7','0.2');
-      roundRect(ctx, x+1, y+1, C-2, C-2, 4);
-      ctx.fill();
-      ctx.strokeStyle = pal[startColors[idx]].main;
-      ctx.lineWidth = 1.5;
-      roundRect(ctx, x+1.5, y+1.5, C-3, C-3, 4);
-      ctx.stroke();
-    }
-  });
-
-  // Bazy (rogi)
-  const bases = GEO.baseCoords;
-  for (const color of COLORS) {
-    const p = pal[color];
-    for (const {x,y} of bases[color]) {
-      ctx.beginPath();
-      ctx.arc(x, y, R*1.1, 0, Math.PI*2);
-      ctx.fillStyle = p.glow.replace('0.7','0.12');
-      ctx.fill();
-      ctx.strokeStyle = p.main;
-      ctx.lineWidth = 1;
-      ctx.stroke();
+  // Grupuj po pozycji pikselowej
+  const groups={};
+  for(const color of state.players){
+    if(!state.pieces[color]) continue;
+    for(const piece of state.pieces[color]){
+      const pos=piecePx(piece);
+      if(!pos) continue;
+      const key=Math.round(pos.x)+'_'+Math.round(pos.y);
+      if(!groups[key]) groups[key]=[];
+      groups[key].push({piece,pos});
     }
   }
 
-  // Dom (ścieżki wewnętrzne) — używamy corrected
-  const homes = buildHomeCoordsCorrected(S, C);
-  for (const color of COLORS) {
-    const p = pal[color];
-    homes[color].forEach(({x,y}, i) => {
-      ctx.fillStyle = p.glow.replace('0.7', i===3?'0.35':'0.15');
-      roundRect(ctx, x-C/2+1, y-C/2+1, C-2, C-2, 4);
-      ctx.fill();
-      if (i===3) {
-        ctx.strokeStyle = p.main;
-        ctx.lineWidth = 1.5;
-        roundRect(ctx, x-C/2+1.5, y-C/2+1.5, C-3, C-3, 4);
-        ctx.stroke();
-      }
-    });
-  }
+  for(const group of Object.values(groups)){
+    const n=group.length;
+    group.forEach(({piece,pos},gi)=>{
+      // Offset gdy kilka pionków na tym samym polu
+      let ox=0,oy=0;
+      if(n===2){const s=R*0.65;ox=gi===0?-s:s;}
+      else if(n===3){const a=gi*(2*Math.PI/3)-Math.PI/2;ox=Math.cos(a)*R*0.7;oy=Math.sin(a)*R*0.7;}
+      else if(n===4){const o=[[-1,-1],[1,-1],[-1,1],[1,1]];ox=o[gi][0]*R*0.6;oy=o[gi][1]*R*0.6;}
 
-  // Centrum
-  const cx = S/2, cy = S/2, cSize = C*1.4;
-  ctx.save();
-  // Narysuj 4 trójkąty wskazujące kierunek domu
-  for (const [i, color] of COLORS.entries()) {
-    const angle = i * Math.PI/2;
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.rotate(angle);
-    ctx.beginPath();
-    ctx.moveTo(0, -cSize*0.5);
-    ctx.lineTo(-cSize*0.4, cSize*0.1);
-    ctx.lineTo(cSize*0.4, cSize*0.1);
-    ctx.closePath();
-    ctx.fillStyle = pal[color].glow.replace('0.7','0.35');
-    ctx.fill();
-    ctx.restore();
-  }
-  ctx.restore();
-}
+      const px=pos.x+ox, py=pos.y+oy;
+      const pc=p[piece.color];
+      const isMovable=state.movablePieces?.some(m=>m.color===piece.color&&m.id===piece.id);
+      const isMine=piece.color===myColor;
 
-function drawBoardClassic() {
-  const { S, C, R } = GEO;
-  const pal = CLASSIC;
-
-  // Tło planszy — drewniane/kremowe
-  ctx.fillStyle = '#f5f0e8';
-  ctx.fillRect(0, 0, S, S);
-
-  // Ramka
-  ctx.strokeStyle = '#8b6914';
-  ctx.lineWidth = 3;
-  ctx.strokeRect(1.5, 1.5, S-3, S-3);
-
-  // Pola trasy
-  const path = hardcodedPath();
-  path.forEach(([col,row], idx) => {
-    const x = col*C, y = row*C;
-    ctx.fillStyle = '#e8e0d0';
-    roundRect(ctx, x+1, y+1, C-2, C-2, 3);
-    ctx.fill();
-    ctx.strokeStyle = '#c0a060';
-    ctx.lineWidth = 0.8;
-    roundRect(ctx, x+1, y+1, C-2, C-2, 3);
-    ctx.stroke();
-
-    const startColors = { 0:'red', 10:'blue', 20:'yellow', 30:'green' };
-    if (startColors[idx]) {
-      const clr = CLASSIC[startColors[idx]].main;
-      ctx.fillStyle = clr + '55';
-      roundRect(ctx, x+1, y+1, C-2, C-2, 3);
-      ctx.fill();
-      ctx.strokeStyle = clr;
-      ctx.lineWidth = 2;
-      roundRect(ctx, x+1.5, y+1.5, C-3, C-3, 3);
-      ctx.stroke();
-    }
-  });
-
-  // Bazy
-  for (const color of COLORS) {
-    const p = pal[color];
-    // Tło obszaru bazy
-    const baseArr = GEO.baseCoords[color];
-    const bx0 = Math.min(...baseArr.map(b=>b.x)) - C/2;
-    const by0 = Math.min(...baseArr.map(b=>b.y)) - C/2;
-    ctx.fillStyle = p.main + '33';
-    roundRect(ctx, bx0, by0, C*2, C*2, 6);
-    ctx.fill();
-    ctx.strokeStyle = p.main;
-    ctx.lineWidth = 2;
-    roundRect(ctx, bx0, by0, C*2, C*2, 6);
-    ctx.stroke();
-
-    for (const {x,y} of baseArr) {
-      ctx.beginPath();
-      ctx.arc(x, y, R*0.9, 0, Math.PI*2);
-      ctx.fillStyle = p.main + '44';
-      ctx.fill();
-      ctx.strokeStyle = p.main;
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-    }
-  }
-
-  // Dom
-  const homes = buildHomeCoordsCorrected(S, C);
-  for (const color of COLORS) {
-    const p = pal[color];
-    homes[color].forEach(({x,y}, i) => {
-      ctx.fillStyle = p.main + (i===3?'99':'44');
-      roundRect(ctx, x-C/2+1, y-C/2+1, C-2, C-2, 3);
-      ctx.fill();
-      ctx.strokeStyle = p.main;
-      ctx.lineWidth = i===3?2:1;
-      roundRect(ctx, x-C/2+1, y-C/2+1, C-2, C-2, 3);
-      ctx.stroke();
-    });
-  }
-
-  // Centrum
-  const cx=S/2, cy=S/2;
-  for (const [i, color] of COLORS.entries()) {
-    const angle = i * Math.PI/2;
-    const cSize = C*1.4;
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.rotate(angle);
-    ctx.beginPath();
-    ctx.moveTo(0, -cSize*0.5);
-    ctx.lineTo(-cSize*0.4, cSize*0.1);
-    ctx.lineTo(cSize*0.4, cSize*0.1);
-    ctx.closePath();
-    ctx.fillStyle = pal[color].main + '88';
-    ctx.fill();
-    ctx.restore();
-  }
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// RYSOWANIE PIONKÓW
-// ══════════════════════════════════════════════════════════════════════════════
-function getPieceScreenPos(piece) {
-  const { C } = GEO;
-  const cfg = COLOR_CFG[piece.color];
-  const homes = buildHomeCoordsCorrected(GEO.S, C);
-  const bases = GEO.baseCoords;
-
-  if (piece.pos === -1) {
-    // Baza — znajdź wolny slot
-    const idInBase = piece.id; // id 0..3 → slot 0..3
-    return bases[piece.color][idInBase];
-  }
-  if (piece.pos === 56) return null; // w meta — nie rysujemy (są w ostatnim slocie domu)
-
-  const homeStart = cfg.homeOffset;
-  if (piece.pos >= homeStart && piece.pos < homeStart + 4) {
-    const slot = piece.pos - homeStart;
-    return homes[piece.color][slot];
-  }
-
-  // Wspólna trasa
-  return GEO.fieldCoords[piece.pos];
-}
-
-function drawPieces() {
-  if (!state.players.length) return;
-  const { R } = GEO;
-  const pal = palette();
-
-  // Zbieramy pozycje, grupujemy po polu (do rysowania obok siebie gdy kilka na jednym polu)
-  const posMap = {};
-  for (const color of state.players) {
-    if (!state.pieces[color]) continue;
-    for (const piece of state.pieces[color]) {
-      if (piece.pos === 56) continue;
-      const pos = getPieceScreenPos(piece);
-      if (!pos) continue;
-      const key = `${Math.round(pos.x)},${Math.round(pos.y)}`;
-      if (!posMap[key]) posMap[key] = [];
-      posMap[key].push({ piece, pos });
-    }
-  }
-
-  // Rysuj grupami
-  for (const group of Object.values(posMap)) {
-    const n = group.length;
-    group.forEach(({ piece, pos }, gi) => {
-      // Niewielkie przesunięcie gdy kilka pionków na jednym polu
-      let ox = 0, oy = 0;
-      if (n > 1) {
-        const angles = [(-1+gi*2/(n-1)) * R*0.7];
-        ox = (gi - (n-1)/2) * R * 0.7;
-        oy = (n > 2 && gi >= 2) ? R * 0.5 : 0;
-      }
-
-      const x = pos.x + ox, y = pos.y + oy;
-      const p = pal[piece.color];
-      const isMovable = state.movablePieces.some(m => m.color === piece.color && m.id === piece.id);
-      const isMyPiece = piece.color === myColor;
-
-      // Glow dla ruszalnych pionków
-      if (isMovable && isMyPiece) {
-        ctx.beginPath();
-        ctx.arc(x, y, R*1.8, 0, Math.PI*2);
-        const grd = ctx.createRadialGradient(x,y,R*0.5, x,y,R*1.8);
-        grd.addColorStop(0, p.glow);
-        grd.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = grd;
-        ctx.fill();
+      // Pulsujący glow dla ruszalnych
+      if(isMovable&&isMine){
+        const gr=ctx.createRadialGradient(px,py,R*0.3,px,py,R*2.4);
+        gr.addColorStop(0,pc.glow);
+        gr.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.beginPath();ctx.arc(px,py,R*2.4,0,Math.PI*2);
+        ctx.fillStyle=gr;ctx.fill();
       }
 
       // Cień
-      ctx.beginPath();
-      ctx.arc(x+2, y+2, R, 0, Math.PI*2);
-      ctx.fillStyle = 'rgba(0,0,0,0.4)';
-      ctx.fill();
+      ctx.beginPath();ctx.arc(px+1.5,py+2,R,0,Math.PI*2);
+      ctx.fillStyle='rgba(0,0,0,0.45)';ctx.fill();
 
-      // Ciało pionka
-      const grad = ctx.createRadialGradient(x-R*0.3,y-R*0.3,R*0.1, x,y,R);
-      grad.addColorStop(0, classicMode ? '#fff' : p.light);
-      grad.addColorStop(0.4, p.main);
-      grad.addColorStop(1, p.dark);
-      ctx.beginPath();
-      ctx.arc(x, y, R, 0, Math.PI*2);
-      ctx.fillStyle = grad;
-      ctx.fill();
+      // Ciało z gradientem
+      const grad=ctx.createRadialGradient(px-R*0.35,py-R*0.38,R*0.05,px,py,R);
+      grad.addColorStop(0,pc.light||'#fff');
+      grad.addColorStop(0.4,pc.main);
+      grad.addColorStop(1,pc.dark||'#000');
+      ctx.beginPath();ctx.arc(px,py,R,0,Math.PI*2);
+      ctx.fillStyle=grad;ctx.fill();
 
       // Obramowanie
-      ctx.strokeStyle = isMovable && isMyPiece
-        ? (classicMode ? '#fff' : 'rgba(255,255,255,0.9)')
-        : 'rgba(0,0,0,0.3)';
-      ctx.lineWidth = isMovable && isMyPiece ? 2 : 1;
+      ctx.strokeStyle=(isMovable&&isMine)?'rgba(255,255,255,0.9)':'rgba(0,0,0,0.2)';
+      ctx.lineWidth=(isMovable&&isMine)?2:1;
       ctx.stroke();
-
-      // Numer pionka (mały)
-      ctx.fillStyle = classicMode ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.7)';
-      ctx.font = `bold ${Math.max(7,R*0.6)}px 'Courier New'`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(piece.id + 1, x, y + R*0.08);
     });
   }
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// KLIKNIĘCIA W PLANSZĘ
-// ══════════════════════════════════════════════════════════════════════════════
-function handleBoardClick(clientX, clientY) {
-  if (!myIsPlayer || !state.players.length) return;
-  if (state.phase !== 'playing') return;
-  if (state.players[state.turnIndex] !== myColor) return;
-  if (state.dice === null) return;
-  if (!state.movablePieces || !state.movablePieces.length) return;
-
-  const rect = boardCanvas.getBoundingClientRect();
-  const scaleX = GEO.S / rect.width;
-  const scaleY = GEO.S / rect.height;
-  const gx = (clientX - rect.left) * scaleX;
-  const gy = (clientY - rect.top)  * scaleY;
-
-  const { R } = GEO;
-  const hitR = R * 2.2;
-
-  for (const { color, id } of state.movablePieces) {
-    if (color !== myColor) continue;
-    const piece = state.pieces[color]?.find(p => p.id === id);
-    if (!piece) continue;
-    const pos = getPieceScreenPos(piece);
-    if (!pos) continue;
-    const dist = Math.hypot(gx - pos.x, gy - pos.y);
-    if (dist <= hitR) {
-      socket.emit('move', { pieceId: id });
-      return;
-    }
+// ══════════════════════════════════════════════════════════
+// KLIKNIĘCIA
+// ══════════════════════════════════════════════════════════
+function handleClick(clientX,clientY){
+  if(!myIsPlayer||state.phase!=='playing') return;
+  if(state.players[state.turnIndex]!==myColor) return;
+  if(!state.dice||!state.movablePieces?.length) return;
+  const rect=boardCanvas.getBoundingClientRect();
+  const sx=(CELL*11)/rect.width, sy=(CELL*11)/rect.height;
+  const gx=(clientX-rect.left)*sx, gy=(clientY-rect.top)*sy;
+  const hitR=CELL*0.5;
+  for(const{color,id}of state.movablePieces){
+    if(color!==myColor) continue;
+    const piece=state.pieces[color]?.find(p=>p.id===id);
+    if(!piece) continue;
+    const pos=piecePx(piece);
+    if(!pos) continue;
+    if(Math.hypot(gx-pos.x,gy-pos.y)<=hitR){socket.emit('move',{pieceId:id});return;}
   }
 }
+boardCanvas.addEventListener('click',e=>handleClick(e.clientX,e.clientY));
+boardCanvas.addEventListener('touchend',e=>{e.preventDefault();const t=e.changedTouches[0];handleClick(t.clientX,t.clientY);},{passive:false});
 
-boardCanvas.addEventListener('click', e => handleBoardClick(e.clientX, e.clientY));
-boardCanvas.addEventListener('touchend', e => {
-  e.preventDefault();
-  const t = e.changedTouches[0];
-  handleBoardClick(t.clientX, t.clientY);
-}, { passive: false });
-
-// ══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 // KOSTKA SVG
-// ══════════════════════════════════════════════════════════════════════════════
-const PIPS = {
-  1: [[50,50]],
-  2: [[28,28],[72,72]],
-  3: [[28,28],[50,50],[72,72]],
-  4: [[28,28],[28,72],[72,28],[72,72]],
-  5: [[28,28],[28,72],[50,50],[72,28],[72,72]],
-  6: [[28,25],[28,50],[28,75],[72,25],[72,50],[72,75]],
-};
+// ══════════════════════════════════════════════════════════
+const PIPS={1:[[50,50]],2:[[28,28],[72,72]],3:[[28,28],[50,50],[72,72]],4:[[28,28],[28,72],[72,28],[72,72]],5:[[28,28],[28,72],[50,50],[72,28],[72,72]],6:[[28,25],[28,50],[28,75],[72,25],[72,50],[72,75]]};
+function renderDice(n){if(!n){diceSvg.innerHTML='';return;}diceSvg.innerHTML=PIPS[n].map(([x,y])=>`<circle class="pip" cx="${x}" cy="${y}" r="9"/>`).join('');}
 
-function renderDiceSvg(n) {
-  if (!n) { diceSvg.innerHTML = ''; return; }
-  diceSvg.innerHTML = PIPS[n]
-    .map(([x,y]) => `<circle class="pip" cx="${x}" cy="${y}" r="9"/>`)
-    .join('');
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// UI UPDATE
-// ══════════════════════════════════════════════════════════════════════════════
-function isMyTurn() {
-  return state.phase === 'playing' && myIsPlayer && state.players[state.turnIndex] === myColor;
-}
-
-function render() {
-  computeGeometry();
-  drawBoard();
-  updateTurnBanner();
-  updateRollBtn();
-  renderDiceSvg(state.dice);
-  updateRestartBtn(0);
-}
-
-function updateTurnBanner() {
-  if (state.phase === 'waiting') { turnBanner.textContent = ''; turnBanner.className = ''; return; }
-  if (state.phase === 'over') { turnBanner.textContent = 'Koniec gry'; turnBanner.className = ''; return; }
-  if (isMyTurn()) {
-    const extra = state.mustRollAgain && state.dice !== null ? ' — rzuć ponownie!' : '';
-    turnBanner.textContent = `➤ Twoja tura (${COLOR_CFG[myColor].label})${extra}`;
-    turnBanner.className = 'my-turn';
-  } else if (state.players.length) {
-    const activeColor = state.players[state.turnIndex];
-    turnBanner.textContent = `Tura: ${COLOR_CFG[activeColor]?.label || ''}`;
-    turnBanner.className = '';
+// ══════════════════════════════════════════════════════════
+// UI
+// ══════════════════════════════════════════════════════════
+function isMyTurn(){return state.phase==='playing'&&myIsPlayer&&state.players[state.turnIndex]===myColor;}
+function render(){computeGeometry();drawBoard();updateBanner();updateRollBtn();renderDice(state.dice);updateRestartBtn(0);}
+function updateBanner(){
+  if(state.phase==='waiting'){turnBanner.textContent='';turnBanner.className='';return;}
+  if(state.phase==='over'){turnBanner.textContent='Koniec gry';turnBanner.className='';return;}
+  if(isMyTurn()){
+    turnBanner.textContent='➤ Twoja tura ('+(COLOR_CFG[myColor].label)+')'+(state.mustRollAgain&&state.dice?' — rzuć znów!':'');
+    turnBanner.className='my-turn';
+  } else if(state.players.length){
+    turnBanner.textContent='Tura: '+(COLOR_CFG[state.players[state.turnIndex]]?.label||'');
+    turnBanner.className='';
   }
 }
-
-function updateRollBtn() {
-  const canRoll = isMyTurn() && (state.dice === null || state.mustRollAgain);
-  rollBtn.disabled = !canRoll;
-  if (state.phase === 'playing') {
-    if (state.dice !== null && !state.mustRollAgain && state.movablePieces?.length) {
-      rollInfo.textContent = 'Wybierz pionka';
-    } else if (state.mustRollAgain) {
-      rollInfo.textContent = '🎲 Rzuć znów!';
-    } else {
-      rollInfo.textContent = '';
-    }
-  } else {
-    rollInfo.textContent = '';
-  }
+function updateRollBtn(){
+  rollBtn.disabled=!(isMyTurn()&&(state.dice===null||state.mustRollAgain));
+  if(state.phase==='playing'){
+    if(state.dice&&!state.mustRollAgain&&state.movablePieces?.length) rollInfo.textContent='Wybierz pionka';
+    else if(state.mustRollAgain) rollInfo.textContent='🎲 Rzuć znów!';
+    else rollInfo.textContent='';
+  } else rollInfo.textContent='';
+}
+function updateRestartBtn(count){
+  if(!myIsPlayer){restartBtn.style.display='none';return;}
+  restartBtn.style.display='block';
+  restartBtn.textContent='↺ Restart ('+count+'/'+(state.players.length||2)+')';
+  restartBtn.classList.toggle('voted',myRestartVote);
 }
 
-function updateRestartBtn(count) {
-  if (!myIsPlayer) { restartBtn.style.display='none'; return; }
-  restartBtn.style.display = 'block';
-  restartBtn.textContent = `↺ Restart (${count}/${state.players.length||2})`;
-  restartBtn.classList.toggle('voted', myRestartVote);
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// SOCKET.IO
-// ══════════════════════════════════════════════════════════════════════════════
-const socket = io('/chinczyk', { transports: ['websocket','polling'] });
-
-socket.on('connect', () => {
-  overlayMsg.textContent = 'Połączono. Czekanie na graczy…';
-});
-
-socket.on('assigned', ({ color, isPlayer, colorIndex }) => {
-  myColor    = color;
-  myIsPlayer = isPlayer;
-  if (isPlayer) {
-    overlayMsg.textContent = `Jesteś ${COLOR_CFG[color].label}. Czekanie na start…`;
-    statusEl.textContent   = COLOR_CFG[color].label;
-  } else {
-    overlayMsg.textContent = 'Oglądasz jako widz.';
-    statusEl.textContent   = 'widz';
-  }
+// ══════════════════════════════════════════════════════════
+// SOCKET
+// ══════════════════════════════════════════════════════════
+const socket=io('/chinczyk',{transports:['websocket','polling']});
+socket.on('connect',()=>{overlayMsg.textContent='Połączono. Czekanie na graczy…';});
+socket.on('assigned',({color,isPlayer})=>{
+  myColor=color;myIsPlayer=isPlayer;
+  if(isPlayer){overlayMsg.textContent='Jesteś '+COLOR_CFG[color].label+'. Czekanie na start…';statusEl.textContent=COLOR_CFG[color].label;}
+  else{overlayMsg.textContent='Oglądasz jako widz.';statusEl.textContent='widz';}
   render();
 });
-
-socket.on('lobby', ({ players, spectators }) => {
-  if (state.phase === 'waiting') {
-    overlayMsg.textContent = `Gracze: ${players}/4 (min. 2)`;
-    startBtn.disabled = !(players >= 2 && myIsPlayer);
-  }
+socket.on('lobby',({players})=>{
+  if(state.phase==='waiting'){overlayMsg.textContent='Gracze: '+players+'/4 (min. 2)';startBtn.disabled=!(players>=2&&myIsPlayer);}
 });
-
-startBtn.addEventListener('click', () => socket.emit('start_game'));
-
-socket.on('state', snap => {
-  state = snap;
-  if (state.phase === 'playing' || state.phase === 'over') overlay.classList.add('hidden');
+startBtn.addEventListener('click',()=>socket.emit('start_game'));
+socket.on('state',snap=>{
+  state=snap;
+  if(state.phase==='playing'||state.phase==='over') overlay.classList.add('hidden');
   render();
-  // Animacja kostki
-  if (snap.dice) {
-    diceDisp.classList.add('rolling');
-    setTimeout(() => diceDisp.classList.remove('rolling'), 350);
-  }
+  if(snap.dice){diceDisp.classList.add('rolling');setTimeout(()=>diceDisp.classList.remove('rolling'),350);}
 });
-
-socket.on('game_over', ({ winner }) => {
-  state.phase  = 'over';
-  state.winner = winner;
-  render();
-  gameOverBox.style.display = 'block';
-  const name = COLOR_CFG[winner]?.label || winner;
-  gameOverBox.innerHTML = `🏆 Wygrywa <span style="color:${palette()[winner]?.main}">${name}</span>!`;
+socket.on('game_over',({winner})=>{
+  state.phase='over';render();
+  gameOverBox.style.display='block';
+  gameOverBox.innerHTML='🏆 Wygrywa <span style="color:'+pal()[winner]?.main+'">'+COLOR_CFG[winner]?.label+'</span>!';
 });
+socket.on('restart',snap=>{state=snap;myRestartVote=false;gameOverBox.style.display='none';overlay.classList.add('hidden');updateRestartBtn(0);render();});
+socket.on('restart_votes',({count})=>updateRestartBtn(count));
+socket.on('player_left',({color})=>{overlay.classList.remove('hidden');overlayMsg.textContent=(COLOR_CFG[color]?.label||color)+' wyszedł. Czekanie…';startBtn.disabled=true;});
+socket.on('disconnect',()=>{overlay.classList.remove('hidden');overlayMsg.textContent='Rozłączono. Odśwież stronę.';});
+rollBtn.addEventListener('click',()=>{if(!rollBtn.disabled)socket.emit('roll');});
+restartBtn.addEventListener('click',()=>{if(!myIsPlayer)return;myRestartVote=!myRestartVote;socket.emit('restart_vote',{vote:myRestartVote});});
+document.addEventListener('keydown',e=>{if(e.key.toLowerCase()==='r'&&myIsPlayer){myRestartVote=!myRestartVote;socket.emit('restart_vote',{vote:myRestartVote});}});
+document.getElementById('home-btn').addEventListener('click',()=>{window.location.href='/';});
+window.addEventListener('resize',()=>{computeGeometry();drawBoard();});
 
-socket.on('restart', snap => {
-  state = snap;
-  myRestartVote = false;
-  gameOverBox.style.display = 'none';
-  overlay.classList.add('hidden');
-  updateRestartBtn(0);
-  render();
+// ══════════════════════════════════════════════════════════
+// USTAWIENIA
+// ══════════════════════════════════════════════════════════
+const settingsBtn=document.getElementById('settings-btn');
+const settingsPanel=document.getElementById('settings-panel');
+const optClassic=document.getElementById('opt-classic');
+settingsBtn.addEventListener('click',e=>{e.stopPropagation();settingsPanel.classList.toggle('open');});
+document.addEventListener('click',e=>{if(!settingsPanel.contains(e.target)&&e.target!==settingsBtn)settingsPanel.classList.remove('open');});
+optClassic.addEventListener('click',()=>{
+  const on=!optClassic.classList.contains('active');
+  optClassic.classList.toggle('active',on);
+  localStorage.setItem('chinczyk-classic',on?'1':'0');
+  classicMode=on;drawBoard();
 });
+if(localStorage.getItem('chinczyk-classic')==='1'){classicMode=true;optClassic.classList.add('active');}
 
-socket.on('restart_votes', ({ count }) => updateRestartBtn(count));
-
-socket.on('player_left', ({ color }) => {
-  overlay.classList.remove('hidden');
-  overlayMsg.textContent = `${COLOR_CFG[color]?.label || color} wyszedł. Czekanie…`;
-  startBtn.disabled = true;
-});
-
-socket.on('disconnect', () => {
-  overlay.classList.remove('hidden');
-  overlayMsg.textContent = 'Rozłączono. Odśwież stronę.';
-});
-
-// ── Akcje ─────────────────────────────────────────────────────────────────────
-rollBtn.addEventListener('click', () => {
-  if (!rollBtn.disabled) socket.emit('roll');
-});
-
-restartBtn.addEventListener('click', () => {
-  if (!myIsPlayer) return;
-  myRestartVote = !myRestartVote;
-  socket.emit('restart_vote', { vote: myRestartVote });
-});
-
-document.addEventListener('keydown', e => {
-  if (e.key.toLowerCase() === 'r' && myIsPlayer) {
-    myRestartVote = !myRestartVote;
-    socket.emit('restart_vote', { vote: myRestartVote });
-  }
-});
-
-document.getElementById('home-btn').addEventListener('click', () => {
-  window.location.href = '/';
-});
-
-// ── Resize ────────────────────────────────────────────────────────────────────
-window.addEventListener('resize', () => { computeGeometry(); drawBoard(); });
-
-// ── Pierwsze rysowanie ────────────────────────────────────────────────────────
+// Start
 computeGeometry();
 drawBoard();
-
-// ══════════════════════════════════════════════════════════════════════════════
-// USTAWIENIA
-// ══════════════════════════════════════════════════════════════════════════════
-const settingsBtn   = document.getElementById('settings-btn');
-const settingsPanel = document.getElementById('settings-panel');
-const optClassic    = document.getElementById('opt-classic');
-const optContrast   = document.getElementById('opt-contrast');
-const optFontSize   = document.getElementById('opt-fontsize');
-
-settingsBtn.addEventListener('click', e => {
-  e.stopPropagation();
-  settingsPanel.classList.toggle('open');
-});
-document.addEventListener('click', e => {
-  if (!settingsPanel.contains(e.target) && e.target !== settingsBtn)
-    settingsPanel.classList.remove('open');
-});
-
-function applySetting(key, on, callback) {
-  localStorage.setItem(key, on ? '1' : '0');
-  callback(on);
-}
-
-optClassic.addEventListener('click', () => {
-  const on = !optClassic.classList.contains('active');
-  optClassic.classList.toggle('active', on);
-  applySetting('chinczyk-classic', on, v => {
-    classicMode = v;
-    document.body.classList.toggle('classic-board', v);
-    drawBoard();
-  });
-});
-
-optContrast.addEventListener('click', () => {
-  const on = !optContrast.classList.contains('active');
-  optContrast.classList.toggle('active', on);
-  applySetting('chinczyk-high-contrast', on, v => {
-    document.body.classList.toggle('high-contrast', v);
-  });
-});
-
-optFontSize.addEventListener('click', () => {
-  const on = !optFontSize.classList.contains('active');
-  optFontSize.classList.toggle('active', on);
-  applySetting('chinczyk-large-font', on, v => {
-    document.body.classList.toggle('large-font', v);
-  });
-});
-
-// Przywróć ustawienia
-if (localStorage.getItem('chinczyk-classic') === '1') {
-  classicMode = true;
-  document.body.classList.add('classic-board');
-  optClassic.classList.add('active');
-  drawBoard();
-}
-if (localStorage.getItem('chinczyk-high-contrast') === '1') {
-  document.body.classList.add('high-contrast');
-  optContrast.classList.add('active');
-}
-if (localStorage.getItem('chinczyk-large-font') === '1') {
-  document.body.classList.add('large-font');
-  optFontSize.classList.add('active');
-}
-
-// ── Helpery ────────────────────────────────────────────────────────────────────
-function roundRect(ctx, x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.roundRect(x, y, w, h, r);
-}
 </script>
 </body>
 </html>
