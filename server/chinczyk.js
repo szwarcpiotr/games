@@ -64,15 +64,16 @@ function calcMove(color, pos, steps) {
     return { newPos: homeStart + newSlot, valid: true };
   }
 
-  // Na wspólnej trasie:
+// Na wspólnej trasie:
   // "postęp" gracza = ile kroków zrobił od swojego pola startowego
-  const progress = (pos - cfg.startField + 40) % 40;
+  // (kierunek odwrócony — pos maleje zamiast rosnąć = ruch w prawo)
+  const progress = (cfg.startField - pos + 40) % 40;
   // Ile kroków do wejścia do domu (po przejechaniu całej trasy)
   const stepsToHome = 40 - progress;
 
   if (steps < stepsToHome) {
     // Zostaje na trasie
-    return { newPos: (pos + steps) % 40, valid: true };
+    return { newPos: (pos - steps + 40) % 40, valid: true };
   } else if (steps === stepsToHome) {
     // Wchodzi na slot 0 domu
     return { newPos: homeStart, valid: true };
