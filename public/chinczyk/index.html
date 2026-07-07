@@ -129,21 +129,22 @@ const CLASSIC_PAL = {
 // TRASA — 40 pól, zweryfikowane bez kolizji z domami
 // siatka 11×11, [col, row], indeks 0..10
 // ══════════════════════════════════════════════════════════
+// Trasa 40 pól — ruch zgodnie z ruchem wskazówek zegara.
+// RED start=[6,10] → prawo → góra → lewo → dół → powrót
 const TRACK = (function(){
   const T=[];
-  // Gałąź RED (pola 0-9): col=6 w górę, potem row=6 w prawo, narożnik [10,5]
-  for(let r=10;r>=6;r--) T.push([6,r]);   // 0..4: [6,10]..[6,6]
-  for(let c=7;c<=10;c++) T.push([c,6]);   // 5..8: [7,6]..[10,6]
-  T.push([10,5]);                          // 9
-  // Gałąź BLUE (pola 10-19): col=10 w górę, potem row=0 w lewo
-  for(let r=4;r>=0;r--) T.push([10,r]);   // 10..14: [10,4]..[10,0]
-  for(let c=9;c>=5;c--) T.push([c,0]);    // 15..19: [9,0]..[5,0]
-  // Gałąź YELLOW (pola 20-29): row=0 w lewo, potem col=0 w dół
-  for(let c=4;c>=0;c--) T.push([c,0]);   // 20..24: [4,0]..[0,0]
-  for(let r=1;r<=5;r++) T.push([0,r]);   // 25..29: [0,1]..[0,5]
-  // Gałąź GREEN (pola 30-39): col=0 w dół, potem row=10 w prawo
-  for(let r=6;r<=10;r++) T.push([0,r]);  // 30..34: [0,6]..[0,10]
-  for(let c=1;c<=5;c++) T.push([c,10]); // 35..39: [1,10]..[5,10]
+  // Gałąź RED (0-9): prawo po dolnym rzędzie + góra po prawej kolumnie
+  for(let c=6;c<=10;c++) T.push([c,10]);  // 0..4:  [6,10]..[10,10]
+  for(let r=9;r>=5;r--) T.push([10,r]);   // 5..9:  [10,9]..[10,5]
+  // Gałąź BLUE (10-19): góra po prawej kolumnie + lewo po górnym rzędzie
+  for(let r=4;r>=0;r--) T.push([10,r]);   // 10..14:[10,4]..[10,0]
+  for(let c=9;c>=5;c--) T.push([c,0]);    // 15..19:[9,0]..[5,0]
+  // Gałąź YELLOW (20-29): lewo po górnym rzędzie + dół po lewej kolumnie
+  for(let c=4;c>=0;c--) T.push([c,0]);    // 20..24:[4,0]..[0,0]
+  for(let r=1;r<=5;r++) T.push([0,r]);    // 25..29:[0,1]..[0,5]
+  // Gałąź GREEN (30-39): dół po lewej kolumnie + prawo po dolnym rzędzie
+  for(let r=6;r<=10;r++) T.push([0,r]);   // 30..34:[0,6]..[0,10]
+  for(let c=1;c<=5;c++) T.push([c,10]);   // 35..39:[1,10]..[5,10]
   return T;
 })();
 
@@ -267,18 +268,18 @@ function drawBoard(){
   }
 
   // Pola trasy
+  const START_IDX = {0:'red',10:'blue',20:'yellow',30:'green'};
   TRACK.forEach(([c,r],idx)=>{
-    const startColor={0:'red',10:'blue',20:'yellow',30:'green'}[idx];
     if(classicMode){
       drawCell(c,r,'#fffef8','#c4b89a',0.8);
-      if(startColor){
-        drawCell(c,r,p[startColor].main+'44',p[startColor].main,2);
-      }
     } else {
       drawCell(c,r,'rgba(255,255,255,0.06)',null);
-      if(startColor){
-        drawCell(c,r,p[startColor].glow.replace(/[\d.]+\)$/,'0.2)'),p[startColor].main,1.5);
-      }
+    }
+    // Pole startowe każdego koloru — podświetlone ale BEZ obwódki (obwódka jest na bazie)
+    const sc=START_IDX[idx];
+    if(sc){
+      if(classicMode) drawCell(c,r,p[sc].main+'44',p[sc].main,2);
+      else            drawCell(c,r,p[sc].glow.replace(/[\d.]+\)$/,'0.22)'),p[sc].main,1.5);
     }
   });
 
@@ -286,46 +287,50 @@ function drawBoard(){
   for(const color of COLORS){
     HOME_COORDS[color].forEach(([c,r],i)=>{
       if(classicMode){
-        const alpha=i===3?'cc':'55';
-        drawCell(c,r,p[color].main+alpha,p[color].main,i===3?2:1);
+        drawCell(c,r,p[color].main+(i===3?'cc':'55'),p[color].main,i===3?2:1);
       } else {
-        const a=0.08+i*0.08;
-        const fill=p[color].glow.replace(/[\d.]+\)$/,a+')');
-        drawCell(c,r,fill,p[color].main,i===3?2:0.8);
-        if(i<3){ctx.globalAlpha=0.4;rr(c*CELL+1.5,r*CELL+1.5,CELL-3,CELL-3,4);ctx.stroke();ctx.globalAlpha=1;}
+        const a=0.08+i*0.09;
+        drawCell(c,r,p[color].glow.replace(/[\d.]+\)$/,a+')'),p[color].main,i===3?2:0.8);
+        if(i<3){ctx.globalAlpha=0.35;rr(c*CELL+1.5,r*CELL+1.5,CELL-3,CELL-3,4);ctx.stroke();ctx.globalAlpha=1;}
       }
     });
   }
 
-  // Bazy (rogi)
+  // Bazy (rogi) — obwódka + kółka wewnątrz, styl identyczny dla każdego koloru
   for(const color of COLORS){
     const[c0,r0]=BASE_COORDS[color][0];
     const bx=c0*CELL, by=r0*CELL;
+    // Tło bazy
     if(classicMode){
       ctx.fillStyle=p[color].main+'33'; rr(bx,by,CELL*2,CELL*2,8); ctx.fill();
-      ctx.strokeStyle=p[color].main; ctx.lineWidth=2; rr(bx,by,CELL*2,CELL*2,8); ctx.stroke();
     } else {
       ctx.fillStyle=p[color].glow.replace(/[\d.]+\)$/,'0.1)'); rr(bx,by,CELL*2,CELL*2,8); ctx.fill();
-      ctx.strokeStyle=p[color].main; ctx.lineWidth=1.5; rr(bx,by,CELL*2,CELL*2,8); ctx.stroke();
     }
-    // Puste kółka w bazie
+    // Obwódka bazy
+    ctx.strokeStyle=p[color].main; ctx.lineWidth=classicMode?2:1.5;
+    rr(bx,by,CELL*2,CELL*2,8); ctx.stroke();
+    // Kółka w bazie (puste — pionki rysowane osobno)
     for(const[c,r] of BASE_COORDS[color]){
       ctx.beginPath(); ctx.arc(cx(c),cy(r),CELL*0.28,0,Math.PI*2);
-      ctx.strokeStyle=p[color].main+(classicMode?'aa':'66');
-      ctx.lineWidth=1.2; ctx.stroke();
+      ctx.strokeStyle=p[color].main+(classicMode?'88':'55');
+      ctx.lineWidth=1; ctx.stroke();
     }
   }
 
-  // Centrum — 4 trójkąty
+  // Centrum — 4 trójkąty wskazujące kierunek domu każdego koloru
+  // RED   dom: od dołu → centrum    → trójkąt W DÓŁ   (PI)
+  // BLUE  dom: od prawej → centrum  → trójkąt W PRAWO (PI/2)
+  // YELLOW dom: od góry → centrum   → trójkąt W GÓRĘ  (0)
+  // GREEN dom: od lewej → centrum   → trójkąt W LEWO  (3*PI/2)
+  const CA = { red:Math.PI, blue:Math.PI/2, yellow:0, green:3*Math.PI/2 };
   const mx=S/2, my=S/2;
-  for(let i=0;i<4;i++){
-    ctx.save(); ctx.translate(mx,my); ctx.rotate(i*Math.PI/2);
+  for(const col of COLORS){
+    ctx.save(); ctx.translate(mx,my); ctx.rotate(CA[col]);
     ctx.beginPath();
     ctx.moveTo(0,-CELL*1.35);
     ctx.lineTo(-CELL*0.8,0);
     ctx.lineTo(CELL*0.8,0);
     ctx.closePath();
-    const col=COLORS[i];
     ctx.fillStyle=classicMode?p[col].main+'99':p[col].glow.replace(/[\d.]+\)$/,'0.5)');
     ctx.fill();
     ctx.restore();

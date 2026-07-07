@@ -3,11 +3,11 @@
 // ═══════════════════════════════════════════════════════════
 // TRASA — identyczna jak w kliencie (40 pól)
 // ═══════════════════════════════════════════════════════════
+// Trasa 40 pól — ruch zgodnie z ruchem wskazówek zegara
 const TRACK = (function(){
   const T=[];
-  for(let r=10;r>=6;r--) T.push([6,r]);   // 0..4
-  for(let c=7;c<=10;c++) T.push([c,6]);   // 5..8
-  T.push([10,5]);                          // 9
+  for(let c=6;c<=10;c++) T.push([c,10]);  // 0..4
+  for(let r=9;r>=5;r--) T.push([10,r]);   // 5..9
   for(let r=4;r>=0;r--) T.push([10,r]);   // 10..14
   for(let c=9;c>=5;c--) T.push([c,0]);    // 15..19
   for(let c=4;c>=0;c--) T.push([c,0]);    // 20..24
