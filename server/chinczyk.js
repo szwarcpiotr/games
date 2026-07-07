@@ -3,17 +3,19 @@
 // ═══════════════════════════════════════════════════════════
 // TRASA — identyczna jak w kliencie (40 pól)
 // ═══════════════════════════════════════════════════════════
-// Trasa 40 pól — ruch zgodnie z ruchem wskazówek zegara
+// Trasa 40 pól — biegnie środkiem ramion krzyża, omija rogi z bazami.
 const TRACK = (function(){
   const T=[];
-  for(let c=6;c<=10;c++) T.push([c,10]);  // 0..4
-  for(let r=9;r>=5;r--) T.push([10,r]);   // 5..9
-  for(let r=4;r>=0;r--) T.push([10,r]);   // 10..14
-  for(let c=9;c>=5;c--) T.push([c,0]);    // 15..19
-  for(let c=4;c>=0;c--) T.push([c,0]);    // 20..24
-  for(let r=1;r<=5;r++) T.push([0,r]);    // 25..29
-  for(let r=6;r<=10;r++) T.push([0,r]);   // 30..34
-  for(let c=1;c<=5;c++) T.push([c,10]);   // 35..39
+  for(let r=10;r>=6;r--) T.push([6,r]);  // 0..4
+  for(let c=7;c<=10;c++) T.push([c,6]);  // 5..8
+  T.push([10,5]);                         // 9
+  for(let r=4;r>=0;r--) T.push([10,r]);  // 10..14
+  for(let c=9;c>=5;c--) T.push([c,0]);   // 15..19
+  for(let c=4;c>=0;c--) T.push([c,0]);   // 20..24
+  for(let r=1;r<=5;r++) T.push([0,r]);   // 25..29
+  T.push([0,6]);                          // 30
+  for(let r=7;r<=10;r++) T.push([0,r]);  // 31..34
+  for(let c=1;c<=5;c++) T.push([c,10]); // 35..39
   return T;
 })();
 
@@ -231,15 +233,15 @@ module.exports = function registerChinczyk(io) {
     socket.on('roll', () => {
       if (!game || game.phase !== 'playing') return;
       if (!isPlayer || game.players[game.turnIndex] !== color) return;
-      // Można rzucać: gdy brak dice lub mustRollAgain
-      if (game.dice !== null && !game.mustRollAgain) return;
+      // Można rzucać tylko gdy: dice===null (nowa tura lub po wykonaniu ruchu za 6)
+      if (game.dice !== null) return;
 
       const roll = Math.ceil(Math.random() * 6);
       game.dice  = roll;
 
       if (roll === 6) {
         game.sixStreak++;
-        game.mustRollAgain = true;
+        game.mustRollAgain = true; // po ruchu gracz dostanie kolejny rzut
       } else {
         game.sixStreak     = 0;
         game.mustRollAgain = false;
@@ -247,11 +249,12 @@ module.exports = function registerChinczyk(io) {
 
       game.movablePieces = getMovable(game);
 
-      // Brak ruchów
+      // Brak ruchów po rzucie
       if (game.movablePieces.length === 0) {
         if (game.mustRollAgain) {
-          // Dostał 6 ale nie ma co ruszyć — niech rzuca dalej
-          game.dice = null;
+          // Dostał 6 ale nie ma żadnego możliwego ruchu — rzuca ponownie
+          game.dice          = null;
+          game.mustRollAgain = false;
           broadcastState();
         } else {
           broadcastState();
@@ -272,6 +275,7 @@ module.exports = function registerChinczyk(io) {
       const movable = game.movablePieces.find(m => m.color === color && m.id === pieceId);
       if (!movable) return;
 
+      const hadSix = game.mustRollAgain;
       applyMove(game, color, pieceId);
 
       if (game.phase === 'over') {
@@ -280,13 +284,17 @@ module.exports = function registerChinczyk(io) {
         return;
       }
 
-      if (game.mustRollAgain) {
-        // Dostał 6 → ruch wykonany → resetuj dice, niech rzuca znów
-        game.dice          = null;
-        game.movablePieces = [];
+      // Po ruchu zawsze zeruj dice i movable.
+      // Jeśli był 6 — gracz musi rzucić ponownie (dice=null, mustRollAgain=true sygnalizuje UI)
+      game.dice          = null;
+      game.movablePieces = [];
+
+      if (hadSix) {
+        // Gracz rzuca ponownie — tura się nie zmienia, dice jest null gotowe na rzut
+        game.mustRollAgain = false; // zresetuj — rzut już "zarobiony", teraz czeka na roll
         broadcastState();
       } else {
-        game.movablePieces = [];
+        game.mustRollAgain = false;
         broadcastState();
         setTimeout(() => { nextTurn(game); broadcastState(); }, 600);
       }

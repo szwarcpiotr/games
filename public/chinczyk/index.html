@@ -129,22 +129,23 @@ const CLASSIC_PAL = {
 // TRASA — 40 pól, zweryfikowane bez kolizji z domami
 // siatka 11×11, [col, row], indeks 0..10
 // ══════════════════════════════════════════════════════════
-// Trasa 40 pól — ruch zgodnie z ruchem wskazówek zegara.
-// RED start=[6,10] → prawo → góra → lewo → dół → powrót
+// Trasa 40 pól — biegnie środkiem ramion krzyża, omija rogi z bazami.
 const TRACK = (function(){
   const T=[];
-  // Gałąź RED (0-9): prawo po dolnym rzędzie + góra po prawej kolumnie
-  for(let c=6;c<=10;c++) T.push([c,10]);  // 0..4:  [6,10]..[10,10]
-  for(let r=9;r>=5;r--) T.push([10,r]);   // 5..9:  [10,9]..[10,5]
-  // Gałąź BLUE (10-19): góra po prawej kolumnie + lewo po górnym rzędzie
-  for(let r=4;r>=0;r--) T.push([10,r]);   // 10..14:[10,4]..[10,0]
-  for(let c=9;c>=5;c--) T.push([c,0]);    // 15..19:[9,0]..[5,0]
-  // Gałąź YELLOW (20-29): lewo po górnym rzędzie + dół po lewej kolumnie
-  for(let c=4;c>=0;c--) T.push([c,0]);    // 20..24:[4,0]..[0,0]
-  for(let r=1;r<=5;r++) T.push([0,r]);    // 25..29:[0,1]..[0,5]
-  // Gałąź GREEN (30-39): dół po lewej kolumnie + prawo po dolnym rzędzie
-  for(let r=6;r<=10;r++) T.push([0,r]);   // 30..34:[0,6]..[0,10]
-  for(let c=1;c<=5;c++) T.push([c,10]);   // 35..39:[1,10]..[5,10]
+  // Gałąź RED (0-9): col=6 w górę + row=6 w prawo
+  for(let r=10;r>=6;r--) T.push([6,r]);  // 0..4:  [6,10]..[6,6]
+  for(let c=7;c<=10;c++) T.push([c,6]);  // 5..8:  [7,6]..[10,6]
+  T.push([10,5]);                         // 9
+  // Gałąź BLUE (10-19): col=10 w górę + row=0 w lewo
+  for(let r=4;r>=0;r--) T.push([10,r]);  // 10..14:[10,4]..[10,0]
+  for(let c=9;c>=5;c--) T.push([c,0]);   // 15..19:[9,0]..[5,0]
+  // Gałąź YELLOW (20-29): row=0 w lewo + col=0 w dół
+  for(let c=4;c>=0;c--) T.push([c,0]);   // 20..24:[4,0]..[0,0]
+  for(let r=1;r<=5;r++) T.push([0,r]);   // 25..29:[0,1]..[0,5]
+  // Gałąź GREEN (30-39): col=0 w dół + row=10 w prawo
+  T.push([0,6]);                          // 30
+  for(let r=7;r<=10;r++) T.push([0,r]);  // 31..34:[0,7]..[0,10]
+  for(let c=1;c<=5;c++) T.push([c,10]); // 35..39:[1,10]..[5,10]
   return T;
 })();
 
