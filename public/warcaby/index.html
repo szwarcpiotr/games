@@ -17,6 +17,7 @@
     transition: background 0.3s;
   }
 
+  /* ── Skórka: neon (domyślna) ── */
   body.skin-neon {
     background: #0a0a0f;
     color: #e0e0e0;
@@ -28,6 +29,7 @@
     color: #4fc3f7;
   }
 
+  /* ── Skórka: classic ── */
   body.skin-classic {
     background: #f0ebe0;
     color: #1a1a1a;
@@ -73,6 +75,7 @@
   body.skin-classic #overlay p { color: #666; }
   body.skin-classic #status-bar { color: #555; }
 
+  /* ── Przyciski nawigacji ── */
   #home-btn, #settings-btn {
     position: fixed;
     top: 16px;
@@ -93,6 +96,7 @@
     background: rgba(255,255,255,0.18); color: #fff;
   }
 
+  /* ── Panel ustawień ── */
   #settings-panel {
     position: fixed;
     top: 64px; right: 16px;
@@ -135,6 +139,7 @@
     width: 24px; height: 24px; border-radius: 4px; flex-shrink: 0;
   }
 
+  /* ── Overlay ── */
   #overlay {
     position: fixed; inset: 0;
     display: flex; flex-direction: column;
@@ -146,6 +151,7 @@
   #overlay p  { color: #aaa; font-size: 14px; }
   #overlay.hidden { display: none; }
 
+  /* ── Info bar ── */
   #info-bar {
     display: flex;
     gap: 40px;
@@ -206,22 +212,29 @@
   <canvas id="board"></canvas>
 </div>
 
-<div id="status-bar">
+<div id="status-bar" id="status-bar">
   <span id="status"></span>
   <span id="restart-status"></span>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
+// ══════════════════════════════════════════════════════════════════════════════
+// STAŁE
+// ══════════════════════════════════════════════════════════════════════════════
 const BOARD_SIZE  = 8;
-const CELL        = 72;
+const CELL        = 72;          // px per cell
 const CANVAS_SIZE = BOARD_SIZE * CELL;
 
+// ══════════════════════════════════════════════════════════════════════════════
+// CANVAS
+// ══════════════════════════════════════════════════════════════════════════════
 const canvas = document.getElementById('board');
 const ctx    = canvas.getContext('2d');
 canvas.width  = CANVAS_SIZE;
 canvas.height = CANVAS_SIZE;
 
+// Skalowanie na małe ekrany
 function resize() {
   const maxSize = Math.min(window.innerWidth - 48, window.innerHeight - 160, 600);
   const scale   = maxSize / CANVAS_SIZE;
@@ -231,12 +244,15 @@ function resize() {
 resize();
 window.addEventListener('resize', resize);
 
+// ══════════════════════════════════════════════════════════════════════════════
+// SKÓRKI
+// ══════════════════════════════════════════════════════════════════════════════
 const SKINS = {
   neon: {
     lightCell:  '#0d2a1f',
     darkCell:   '#071510',
-    p1piece:    '#4fc3f7',
-    p2piece:    '#ef5350',
+    p1piece:    '#4fc3f7',   // niebieski
+    p2piece:    '#ef5350',   // czerwony
     p1king:     '#b3e5fc',
     p2king:     '#ffcdd2',
     highlight:  'rgba(79,195,247,0.35)',
@@ -247,8 +263,8 @@ const SKINS = {
   classic: {
     lightCell:  '#f0d9b5',
     darkCell:   '#b58863',
-    p1piece:    '#111',
-    p2piece:    '#eee',
+    p1piece:    '#111',      // czarny
+    p2piece:    '#eee',      // biały
     p1king:     '#333',
     p2king:     '#fff',
     highlight:  'rgba(255,255,0,0.35)',
@@ -261,35 +277,36 @@ const SKINS = {
 let currentSkin = 'neon';
 function skin() { return SKINS[currentSkin]; }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// LOGIKA WARCABÓW (po stronie klienta — tylko do wyświetlania, stan z serwera)
+// ══════════════════════════════════════════════════════════════════════════════
+// Pionek: { player: 1|2, king: bool } lub null
 let board       = createEmptyBoard();
-let selected    = null;
-let validMoves  = [];
+let selected    = null;   // {row, col} zaznaczony pionek
+let validMoves  = [];     // [{from, to, captures}] dla zaznaczonego
 let myPlayer    = 0;
-let currentTurn = 1;
+let currentTurn = 1;      // czyja tura wg serwera
 let gamePhase   = 'waiting';
-let forcedContinue = null;
+let forcedContinue = null; // {row, col} jeśli musimy dobić tym pionkiem
 
 function createEmptyBoard() {
   const b = [];
-  for (let r = 0; r < 8; r++) b.push(new Array(8).fill(null));
+  for (let r = 0; r < 8; r++) {
+    b.push(new Array(8).fill(null));
+  }
   return b;
 }
 
-// ══════════════════════════════════════════════════════════
-// SOCKET — token sesji dla rejoin
-// ══════════════════════════════════════════════════════════
-const SESSION_KEY = 'warcaby_token';
-const socket = io('/warcaby', {
-  transports: ['websocket', 'polling'],
-  auth: { token: sessionStorage.getItem(SESSION_KEY) },
-});
+// ══════════════════════════════════════════════════════════════════════════════
+// SOCKET.IO
+// ══════════════════════════════════════════════════════════════════════════════
+const socket = io('/warcaby', { transports: ['websocket', 'polling'] });
 
 socket.on('connect', () => {
   document.getElementById('overlay-msg').textContent = 'Połączono. Czekanie na drugiego gracza…';
 });
 
-socket.on('assigned', ({ player, token }) => {
-  if (token) sessionStorage.setItem(SESSION_KEY, token);
+socket.on('assigned', ({ player }) => {
   myPlayer = player;
   const names = ['Widz', 'Gracz 1 (czarny)', 'Gracz 2 (biały)'];
   document.getElementById('status').textContent =
@@ -370,16 +387,9 @@ socket.on('restart', ({ boardState, turn }) => {
   render();
 });
 
-// Gracz chwilowo wyszedł — grace period 60s
-socket.on('player_away', ({ player }) => {
-  document.getElementById('overlay').classList.remove('hidden');
-  document.getElementById('overlay-msg').textContent = `Gracz ${player} chwilowo wyszedł. Czekanie na powrót… (60s)`;
-});
-
-// Gracz definitywnie wyszedł (po 60s grace period)
 socket.on('player_left', ({ player }) => {
   document.getElementById('overlay').classList.remove('hidden');
-  document.getElementById('overlay-msg').textContent = `Gracz ${player} opuścił grę. Czekanie na nowego gracza…`;
+  document.getElementById('overlay-msg').textContent = `Gracz ${player} wyszedł. Czekanie…`;
 });
 
 socket.on('disconnect', () => {
@@ -397,6 +407,9 @@ function updateTurnText() {
   }
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// INPUT — klik na planszę
+// ══════════════════════════════════════════════════════════════════════════════
 canvas.addEventListener('click', e => {
   if (gamePhase !== 'playing' || myPlayer === 0 || currentTurn !== myPlayer) return;
 
@@ -407,6 +420,7 @@ canvas.addEventListener('click', e => {
   const col   = Math.floor(px / CELL);
   const row   = Math.floor(py / CELL);
 
+  // Czy kliknięto pole docelowe ruchu?
   const move = validMoves.find(m => m.to.row === row && m.to.col === col);
   if (move) {
     socket.emit('move', move);
@@ -416,21 +430,28 @@ canvas.addEventListener('click', e => {
     return;
   }
 
+  // Czy kliknięto własny pionek?
   const piece = board[row][col];
   if (piece && piece.player === myPlayer) {
-    if (forcedContinue && (row !== forcedContinue.row || col !== forcedContinue.col)) return;
+    if (forcedContinue && (row !== forcedContinue.row || col !== forcedContinue.col)) {
+      return; // musisz dobić tym samym pionkiem
+    }
     selected   = { row, col };
     validMoves = getValidMovesFor(row, col, board, myPlayer);
     render();
     return;
   }
 
+  // Klik w pustkę — odznacz (ale nie podczas wymuszonej kontynuacji bicia)
   if (forcedContinue) return;
   selected   = null;
   validMoves = [];
   render();
 });
 
+// ══════════════════════════════════════════════════════════════════════════════
+// LOGIKA RUCHÓW (klient — do podpowiedzi, serwer weryfikuje)
+// ══════════════════════════════════════════════════════════════════════════════
 function getValidMovesFor(row, col, b, player) {
   const continuationSquare = (forcedContinue && forcedContinue.row === row && forcedContinue.col === col)
     ? { row, col } : null;
@@ -457,9 +478,13 @@ function getAllMoves(b, player, continuationSquare = null) {
 
 function getMovesForPiece(row, col, b, player, isKing, isContinuation = false) {
   const moves = [];
+
+  // Ruchy proste — pionek tylko do przodu, damka w każdym kierunku
   const moveDirs = isKing
     ? [[-1,-1],[-1,1],[1,-1],[1,1]]
-    : player === 1 ? [[-1,-1],[-1,1]] : [[1,-1],[1,1]];
+    : player === 1
+      ? [[-1,-1],[-1,1]]
+      : [[1,-1],[1,1]];
 
   if (!isContinuation) {
     for (const [dr, dc] of moveDirs) {
@@ -470,6 +495,7 @@ function getMovesForPiece(row, col, b, player, isKing, isContinuation = false) {
     }
   }
 
+  // Pierwsze bicie w turze — tylko do przodu dla pionka. Bicie w kontynuacji (combo) — w każdym kierunku.
   const captureDirs = (isKing || isContinuation)
     ? [[-1,-1],[-1,1],[1,-1],[1,1]]
     : moveDirs;
@@ -489,10 +515,14 @@ function getMovesForPiece(row, col, b, player, isKing, isContinuation = false) {
 
 function inBounds(r, c) { return r >= 0 && r < 8 && c >= 0 && c < 8; }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// RENDERING
+// ══════════════════════════════════════════════════════════════════════════════
 function render() {
   const s = skin();
   ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
+  // Pola
   for (let r = 0; r < 8; r++) {
     for (let c = 0; c < 8; c++) {
       const isDark = (r + c) % 2 === 1;
@@ -501,11 +531,13 @@ function render() {
     }
   }
 
+  // Podświetlenie zaznaczonego
   if (selected) {
     ctx.fillStyle = s.highlight;
     ctx.fillRect(selected.col * CELL, selected.row * CELL, CELL, CELL);
   }
 
+  // Podpowiedzi ruchów
   for (const m of validMoves) {
     const { row, col } = m.to;
     ctx.fillStyle = s.moveHint;
@@ -514,6 +546,7 @@ function render() {
     ctx.fill();
   }
 
+  // Linie siatki
   ctx.strokeStyle = s.gridLine;
   ctx.lineWidth   = 1;
   for (let i = 0; i <= 8; i++) {
@@ -523,6 +556,7 @@ function render() {
     ctx.moveTo(0, i * CELL); ctx.lineTo(CANVAS_SIZE, i * CELL); ctx.stroke();
   }
 
+  // Pionki
   for (let r = 0; r < 8; r++) {
     for (let c = 0; c < 8; c++) {
       const p = board[r][c];
@@ -538,13 +572,15 @@ function drawPiece(row, col, piece, s) {
   const r  = CELL * 0.38;
   const isP1 = piece.player === 1;
   const baseColor = isP1 ? s.p1piece : s.p2piece;
-  const kingColor = isP1 ? s.p2piece : s.p1piece;
+  const kingColor = isP1 ? s.p2piece : s.p1piece; // kolor PRZECIWNIKA dla symbolu damki
 
+  // Cień
   ctx.fillStyle = 'rgba(0,0,0,0.35)';
   ctx.beginPath();
   ctx.arc(x + 3, y + 3, r, 0, Math.PI*2);
   ctx.fill();
 
+  // Pionek — gradient
   const g = ctx.createRadialGradient(x - r*0.3, y - r*0.3, r*0.1, x, y, r);
   g.addColorStop(0, currentSkin === 'neon' ? lighten(baseColor) : (isP1 ? '#555' : '#fff'));
   g.addColorStop(1, baseColor);
@@ -553,6 +589,7 @@ function drawPiece(row, col, piece, s) {
   ctx.arc(x, y, r, 0, Math.PI*2);
   ctx.fill();
 
+  // Obwódka
   ctx.strokeStyle = currentSkin === 'neon'
     ? 'rgba(255,255,255,0.2)'
     : (isP1 ? '#000' : '#bbb');
@@ -561,6 +598,7 @@ function drawPiece(row, col, piece, s) {
   ctx.arc(x, y, r, 0, Math.PI*2);
   ctx.stroke();
 
+  // Damka — korona
   if (piece.king) {
     ctx.fillStyle = kingColor;
     ctx.font = `bold ${Math.floor(CELL * 0.4)}px serif`;
@@ -571,12 +609,16 @@ function drawPiece(row, col, piece, s) {
 }
 
 function lighten(hex) {
+  // Rozjaśnij kolor dla gradientu
   const r = parseInt(hex.slice(1,3),16);
   const g = parseInt(hex.slice(3,5),16);
   const b = parseInt(hex.slice(5,7),16);
   return `rgb(${Math.min(255,r+80)},${Math.min(255,g+80)},${Math.min(255,b+80)})`;
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// MINIATURKI SKÓREK W PANELU
+// ══════════════════════════════════════════════════════════════════════════════
 function drawSkinPreview(canvasId, skinKey) {
   const c   = document.getElementById(canvasId);
   const cx  = c.getContext('2d');
@@ -589,6 +631,7 @@ function drawSkinPreview(canvasId, skinKey) {
       cx.fillRect(cc2*cs, r*cs, cs, cs);
     }
   }
+  // Dwa pionki
   cx.fillStyle = s.p1piece;
   cx.beginPath(); cx.arc(9, 9, 3.5, 0, Math.PI*2); cx.fill();
   cx.fillStyle = s.p2piece;
@@ -598,6 +641,9 @@ function drawSkinPreview(canvasId, skinKey) {
 drawSkinPreview('prev-neon',    'neon');
 drawSkinPreview('prev-classic', 'classic');
 
+// ══════════════════════════════════════════════════════════════════════════════
+// UI — ustawienia, home, restart
+// ══════════════════════════════════════════════════════════════════════════════
 document.getElementById('home-btn').addEventListener('click', () => {
   window.location.href = '/';
 });
@@ -627,6 +673,7 @@ document.querySelectorAll('.skin-option').forEach(el => {
   });
 });
 
+// Przywróć skórkę z localStorage
 const savedSkin = localStorage.getItem('warcaby-skin');
 if (savedSkin && SKINS[savedSkin]) {
   currentSkin = savedSkin;
@@ -636,6 +683,7 @@ if (savedSkin && SKINS[savedSkin]) {
   });
 }
 
+// Restart vote
 let myRestartVote = false;
 document.addEventListener('keydown', e => {
   if (e.key.toLowerCase() === 'r' && myPlayer !== 0 && gamePhase === 'playing') {
@@ -644,6 +692,7 @@ document.addEventListener('keydown', e => {
   }
 });
 
+// Render początkowy
 render();
 </script>
 </body>

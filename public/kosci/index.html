@@ -21,6 +21,7 @@
     transition: background 0.2s, color 0.2s;
   }
 
+  /* ── Górny pasek (sticky) ─────────────────────────────────── */
   #top-bar {
     position: sticky;
     top: 0;
@@ -51,9 +52,16 @@
   }
   #home-btn:active, #settings-btn:active { background: rgba(255,255,255,0.18); color: #fff; }
 
-  #settings-btn { visibility: hidden; pointer-events: none; }
+  /* Ustawienia — dostępne tylko w wersji telefonicznej (wąski ekran) */
+  #settings-btn {
+    visibility: hidden;
+    pointer-events: none;
+  }
   @media (max-width: 639px) {
-    #settings-btn { visibility: visible; pointer-events: auto; }
+    #settings-btn {
+      visibility: visible;
+      pointer-events: auto;
+    }
   }
 
   h1 {
@@ -75,6 +83,7 @@
   }
   #turn-banner.my-turn { color: #4fc3f7; font-weight: bold; }
 
+  /* ── Panel ustawień (styl jak w warcabach) ───────────────────── */
   #settings-panel {
     position: fixed;
     top: 64px; right: 16px;
@@ -139,6 +148,7 @@
   .setting-option.active .setting-toggle { background: rgba(79,195,247,0.35); }
   .setting-option.active .setting-toggle::after { background: #4fc3f7; transform: translateX(16px); }
 
+  /* ── Kości ────────────────────────────────────────────────── */
   #dice-area {
     display: flex;
     gap: clamp(6px, 2vw, 14px);
@@ -177,6 +187,7 @@
     100% { transform: rotate(-5deg) scale(1.04); }
   }
 
+  /* ── Kontrolki ────────────────────────────────────────────── */
   #controls {
     display: flex;
     gap: 12px;
@@ -188,14 +199,16 @@
 
   #roll-btn {
     background: #ef5350; color: #fff; border: none;
-    padding: 0 28px; height: 48px;
+    padding: 0 28px;
+    height: 48px;
     border-radius: 10px;
     font-family: inherit;
     font-size: clamp(14px, 4vw, 16px);
     letter-spacing: 1px; cursor: pointer; font-weight: bold;
     touch-action: manipulation;
     transition: background 0.15s, transform 0.1s;
-    flex: 1; max-width: 220px;
+    flex: 1;
+    max-width: 220px;
   }
   #roll-btn:active:not(:disabled) { background: #ff7a76; transform: scale(0.97); }
   #roll-btn:disabled { background: #2a1a1a; color: #554; cursor: not-allowed; }
@@ -208,6 +221,7 @@
     min-width: 60px;
   }
 
+  /* ── Tabela ───────────────────────────────────────────────── */
   #table-wrap {
     width: 100%;
     overflow-x: auto;
@@ -239,6 +253,7 @@
     top: 0;
   }
 
+  /* Sticky pierwsza kolumna (etykieta) */
   td.label, th.label {
     text-align: left;
     color: #9ab0a4;
@@ -251,7 +266,11 @@
     min-width: 0;
     padding-left: 8px;
   }
-  th.label { z-index: 3; background: #0d1f1a; }
+  th.label {
+    z-index: 3;
+    background: #0d1f1a;
+  }
+
   tr:hover td.label { background: #0f1d16; }
 
   tr.section-row td {
@@ -262,19 +281,29 @@
   }
   tr.section-row td.label { background: #0a1410; }
 
-  td.filled { color: #e0e0e0; font-weight: bold; background: rgba(255,255,255,0.02); }
+  td.filled {
+    color: #e0e0e0;
+    font-weight: bold;
+    background: rgba(255,255,255,0.02);
+  }
   td.empty-other { color: #5a7060; }
 
   td.preview {
-    color: #4fc3f7; opacity: 0.55; cursor: pointer; font-weight: bold;
+    color: #4fc3f7;
+    opacity: 0.55;
+    cursor: pointer;
+    font-weight: bold;
     transition: opacity 0.12s, background 0.12s;
   }
   td.preview:active { opacity: 1; background: rgba(79,195,247,0.18); }
   td.preview-zero { color: #7a9a88; }
 
   tfoot td {
-    font-weight: bold; color: #4fc3f7; background: #0d1f1a;
-    position: sticky; bottom: 0;
+    font-weight: bold;
+    color: #4fc3f7;
+    background: #0d1f1a;
+    position: sticky;
+    bottom: 0;
   }
   tfoot td.label { background: #0d1f1a; }
 
@@ -283,7 +312,9 @@
   .delta-pos { font-size: clamp(8px, 2.3vw, 10px); color: #4a9; margin-left: 3px; font-weight: normal; }
   .delta-neg { font-size: clamp(8px, 2.3vw, 10px); color: #c66; margin-left: 3px; font-weight: normal; }
   .delta-rem { font-size: clamp(8px, 2.3vw, 10px); color: #5a7a68; margin-left: 2px; }
+  td.preview .delta-pos, td.preview .delta-neg { opacity: 0.85; }
 
+  /* ── Desktop: oryginalna ciemna kolorystyka ───────────────── */
   @media (min-width: 640px) {
     td.label, th.label    { background: #0a0a0f; color: #aaa; }
     th.label              { background: #0d1f1a; }
@@ -299,12 +330,21 @@
     .delta-neg            { color: #a55; }
   }
 
-  body.high-contrast { background: #000; color: #fff; }
+  /* ══════════════════════════════════════════════════════════
+     TRYB WYSOKIEGO KONTRASTU (tylko telefon, opcjonalny)
+     ══════════════════════════════════════════════════════════ */
+  body.high-contrast {
+    background: #000;
+    color: #fff;
+  }
   body.high-contrast #top-bar { background: #000; border-bottom: 1px solid #fff; }
   body.high-contrast h1 { color: #00e5ff; }
   body.high-contrast #turn-banner { color: #fff; }
   body.high-contrast #turn-banner.my-turn { color: #00e5ff; }
-  body.high-contrast #home-btn, body.high-contrast #settings-btn { background: #000; border: 2px solid #fff; color: #fff; }
+  body.high-contrast #home-btn,
+  body.high-contrast #settings-btn {
+    background: #000; border: 2px solid #fff; color: #fff;
+  }
   body.high-contrast .die { background: #fff; border-color: #000; box-shadow: 0 0 0 2px #000; }
   body.high-contrast .die.held { border-color: #00e5ff; box-shadow: 0 0 0 3px #00e5ff; }
   body.high-contrast .pip { fill: #000; }
@@ -335,6 +375,9 @@
   body.high-contrast #overlay p { color: #fff; }
   body.high-contrast #game-over-box { color: #00e5ff; }
 
+  /* ══════════════════════════════════════════════════════════
+     WIĘKSZA CZCIONKA (tylko telefon, opcjonalny)
+     ══════════════════════════════════════════════════════════ */
   body.large-font table { font-size: 17px; }
   body.large-font th, body.large-font td { padding: 11px 10px; font-size: 17px; }
   body.large-font td.label, body.large-font th.label { font-size: 15px; }
@@ -346,6 +389,7 @@
   body.large-font h1 { font-size: 22px; }
   body.large-font .setting-option { font-size: 14px; }
 
+  /* ── Dolny pasek ──────────────────────────────────────────── */
   #bottom-bar {
     width: 100%;
     display: flex;
@@ -375,7 +419,11 @@
     white-space: nowrap;
     min-height: 36px;
   }
-  #restart-btn.voted { border-color: #4fc3f7; color: #4fc3f7; background: rgba(79,195,247,0.1); }
+  #restart-btn.voted {
+    border-color: #4fc3f7;
+    color: #4fc3f7;
+    background: rgba(79,195,247,0.1);
+  }
   #restart-btn:active { background: rgba(255,255,255,0.12); }
 
   #restart-status { font-size: 11px; color: #555; }
@@ -389,24 +437,35 @@
     line-height: 1.6;
   }
 
+  /* ── Overlay ──────────────────────────────────────────────── */
   #overlay {
     position: fixed; inset: 0;
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
     background: rgba(0,0,0,0.88);
-    gap: 14px; z-index: 50;
-    padding: 32px 24px; text-align: center;
+    gap: 14px;
+    z-index: 50;
+    padding: 32px 24px;
+    text-align: center;
   }
-  #overlay h2 { font-size: clamp(22px, 7vw, 30px); letter-spacing: 4px; color: #4fc3f7; }
+  #overlay h2 {
+    font-size: clamp(22px, 7vw, 30px);
+    letter-spacing: 4px;
+    color: #4fc3f7;
+  }
   #overlay p { color: #aaa; font-size: clamp(13px, 3.5vw, 15px); max-width: 300px; }
   #overlay.hidden { display: none; }
 
   #start-btn {
     background: #4fc3f7; color: #03222e; border: none;
-    padding: 14px 32px; border-radius: 10px;
-    font-family: inherit; font-size: clamp(14px, 4vw, 16px);
+    padding: 14px 32px;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: clamp(14px, 4vw, 16px);
     letter-spacing: 1px; cursor: pointer; font-weight: bold;
-    touch-action: manipulation; min-width: 180px; min-height: 50px;
+    touch-action: manipulation;
+    min-width: 180px;
+    min-height: 50px;
     transition: background 0.15s, transform 0.1s;
   }
   #start-btn:active:not(:disabled) { background: #7ad4fb; transform: scale(0.97); }
@@ -428,7 +487,9 @@
     <button id="settings-btn" title="Ustawienia">⚙</button>
   </div>
   <div id="turn-banner"></div>
+
   <div id="dice-area"></div>
+
   <div id="controls">
     <button id="roll-btn" disabled>🎲 Rzuć</button>
     <span id="rolls-left"></span>
@@ -448,6 +509,7 @@
 </div>
 
 <div id="table-wrap"></div>
+
 <div id="game-over-box" style="display:none;"></div>
 
 <div id="bottom-bar">
@@ -494,17 +556,27 @@ function diceCounts(dice) {
 
 function scoreFor(dice, key) {
   const cat = CATEGORIES.find(c => c.key === key);
-  if (cat.upper) return (diceCounts(dice)[cat.value] || 0) * cat.value;
+  if (cat.upper) {
+    return (diceCounts(dice)[cat.value] || 0) * cat.value;
+  }
   const counts = diceCounts(dice);
   const sum    = dice.reduce((a, b) => a + b, 0);
   const vals   = Object.values(counts);
   const uniqueSorted = [...new Set(dice)].sort((a, b) => a - b);
+
   switch (key) {
     case 'threeKind': return vals.some(c => c >= 3) ? sum : 0;
     case 'fourKind':  return vals.some(c => c >= 4) ? sum : 0;
-    case 'fullHouse': { const sv = [...vals].sort(); return (sv.length === 2 && sv[0] === 2 && sv[1] === 3) ? 25 : 0; }
-    case 'smallStraight': return ['1234','2345','3456'].some(seq => seq.split('').every(ch => uniqueSorted.includes(Number(ch)))) ? 30 : 0;
-    case 'largeStraight': { const s = uniqueSorted.join(''); return (s === '12345' || s === '23456') ? 40 : 0; }
+    case 'fullHouse': {
+      const sv = [...vals].sort();
+      return (sv.length === 2 && sv[0] === 2 && sv[1] === 3) ? 25 : 0;
+    }
+    case 'smallStraight':
+      return ['1234','2345','3456'].some(seq =>
+        seq.split('').every(ch => uniqueSorted.includes(Number(ch)))
+      ) ? 30 : 0;
+    case 'largeStraight':
+      return (uniqueSorted.join('') === '12345' || uniqueSorted.join('') === '23456') ? 40 : 0;
     case 'yahtzee': return vals.some(c => c === 5) ? 50 : 0;
     case 'chance':  return sum;
     default: return 0;
@@ -515,13 +587,13 @@ function upperSum(card) {
   return CATEGORIES.filter(c => c.upper).reduce((a, c) => a + (card[c.key] || 0), 0);
 }
 function totalScore(card) {
-  if (!card) return 0;
   const upper = upperSum(card);
   const bonus = upper >= 63 ? 35 : 0;
   const lower = CATEGORIES.filter(c => !c.upper).reduce((a, c) => a + (card[c.key] || 0), 0);
   return upper + bonus + lower + (card.yahtzeeBonusCount || 0) * 100;
 }
 
+// ── Stan ──────────────────────────────────────────────────────────────────────
 let myPlayer      = 0;
 let myIndex       = -1;
 let myRestartVote = false;
@@ -535,19 +607,11 @@ let state = {
   scores: {},
 };
 
-// ══════════════════════════════════════════════════════════
-// SOCKET — token sesji dla rejoin
-// ══════════════════════════════════════════════════════════
-const SESSION_KEY = 'kosci_token';
-const socket = io('/kosci', {
-  transports: ['websocket', 'polling'],
-  auth: { token: sessionStorage.getItem(SESSION_KEY) },
-});
+const socket = io('/kosci', { transports: ['websocket', 'polling'] });
 
 socket.on('connect', () => { overlayMsg.textContent = 'Połączono. Czekanie na graczy…'; });
 
-socket.on('assigned', ({ player, playerIndex, token }) => {
-  if (token) sessionStorage.setItem(SESSION_KEY, token);
+socket.on('assigned', ({ player, playerIndex }) => {
   myPlayer = player;
   myIndex  = playerIndex;
   overlayMsg.textContent = player === 0
@@ -590,14 +654,6 @@ socket.on('game_over', ({ scores, totals, winnerIndex }) => {
   gameOverBox.innerHTML = `🏆 Wygrywa ${winnerName}!<br><span style="color:#667;font-size:12px">${lines}</span>`;
 });
 
-// Gracz chwilowo wyszedł — grace period 60s
-socket.on('player_away', ({ player }) => {
-  overlay.classList.remove('hidden');
-  overlayMsg.textContent = `Gracz ${player} chwilowo wyszedł. Czekanie na powrót… (60s)`;
-  startBtn.disabled = true;
-});
-
-// Gracz definitywnie wyszedł (po 60s grace period)
 socket.on('player_left', ({ player }) => {
   overlay.classList.remove('hidden');
   overlayMsg.textContent = `Gracz ${player} wyszedł. Czekanie…`;
@@ -609,8 +665,16 @@ socket.on('disconnect', () => {
   overlayMsg.textContent = 'Rozłączono. Odśwież stronę.';
 });
 
+// ── Rendering ──────────────────────────────────────────────────────────────────
 function pipPositions(n) {
-  return { 1:[[50,50]], 2:[[28,28],[72,72]], 3:[[28,28],[50,50],[72,72]], 4:[[28,28],[28,72],[72,28],[72,72]], 5:[[28,28],[28,72],[50,50],[72,28],[72,72]], 6:[[28,25],[28,50],[28,75],[72,25],[72,50],[72,75]] }[n];
+  return {
+    1: [[50,50]],
+    2: [[28,28],[72,72]],
+    3: [[28,28],[50,50],[72,72]],
+    4: [[28,28],[28,72],[72,28],[72,72]],
+    5: [[28,28],[28,72],[50,50],[72,28],[72,72]],
+    6: [[28,25],[28,50],[28,75],[72,25],[72,50],[72,75]],
+  }[n];
 }
 function dieSVG(n) {
   const pips = pipPositions(n).map(([x,y]) => `<circle class="pip" cx="${x}" cy="${y}" r="9"/>`).join('');
@@ -623,13 +687,19 @@ function isMyTurn() {
 
 function renderDice() {
   diceArea.innerHTML = '';
+  // Można trzymać tylko gdy moja tura i zostały jeszcze rzuty i już rzucono
   const canHold = isMyTurn() && state.rollsLeft < 3 && state.rollsLeft > 0;
+  // Wyszarzamy kości tylko gdy jeszcze nie rzucono w tej turze (rollsLeft === 3)
+  // — nie szarzejemy po 3 rzucie ani podczas tury przeciwnika (żeby widzieć jego kosci)
   const dimDice = state.rollsLeft === 3;
   state.dice.forEach((val, i) => {
     const die = document.createElement('div');
     die.className = 'die' + (state.held[i] ? ' held' : '') + (dimDice ? ' disabled' : '');
     die.innerHTML = dieSVG(val);
-    die.addEventListener('click', () => { if (!canHold) return; socket.emit('hold', { index: i }); });
+    die.addEventListener('click', () => {
+      if (!canHold) return;
+      socket.emit('hold', { index: i });
+    });
     diceArea.appendChild(die);
   });
 }
@@ -648,14 +718,19 @@ function updateTurnBanner() {
 
 function updateRollBtn() {
   rollBtn.disabled  = !(isMyTurn() && state.rollsLeft > 0);
-  rollsLeftEl.textContent = state.phase === 'playing' ? `${state.rollsLeft}/3 rzutów` : '';
+  rollsLeftEl.textContent = state.phase === 'playing'
+    ? `${state.rollsLeft}/3 rzutów`
+    : '';
 }
 
 function renderTable() {
   const players = state.players;
   if (!players.length) { tableWrap.innerHTML = ''; return; }
 
-  let html = `<table><thead><tr id="player-names"><th class="label">Kategoria</th>`;
+  let html = `<table>
+    <thead>
+      <tr id="player-names">
+        <th class="label">Kategoria</th>`;
   players.forEach((pid, i) => {
     const active = (state.phase === 'playing' && i === state.turnIndex) ? ' class="active-col"' : '';
     const me = (i === myIndex) ? '★' : '';
@@ -668,7 +743,7 @@ function renderTable() {
   CATEGORIES.forEach(cat => {
     html += `<tr><td class="label">${cat.label}</td>`;
     players.forEach((pid, i) => {
-      const card   = state.scores[i];
+      const card   = state.scores[pid];
       const filled = card && card[cat.key] !== null;
 
       if (filled) {
@@ -699,20 +774,21 @@ function renderTable() {
 
     if (cat.key === 'sixes') {
       html += `<tr class="section-row"><td class="label">Bonus ≥63→+35</td>`;
-      players.forEach((pid, i) => {
-        const card       = state.scores[i];
+      players.forEach(pid => {
+        const card       = state.scores[pid];
         const uSum       = upperSum(card);
-        const filledCats = CATEGORIES.filter(c => c.upper && card && card[c.key] !== null);
+        const filledCats = CATEGORIES.filter(c => c.upper && card[c.key] !== null);
         const parSoFar   = filledCats.reduce((a, c) => a + c.value * 3, 0);
         const cumDelta   = uSum - parSoFar;
+
         if (uSum >= 63) {
           html += `<td><span class="delta-pos">+35</span></td>`;
         } else if (filledCats.length === 0) {
           html += `<td><span class="delta-rem">cel:63</span></td>`;
         } else {
-          const sign = cumDelta >= 0 ? '+' : '';
-          const dc   = cumDelta >= 0 ? 'delta-pos' : 'delta-neg';
-          const rem  = 63 - uSum;
+          const sign  = cumDelta >= 0 ? '+' : '';
+          const dc    = cumDelta >= 0 ? 'delta-pos' : 'delta-neg';
+          const rem   = 63 - uSum;
           html += `<td><span class="${dc}">${sign}${cumDelta}</span><span class="delta-rem"> (−${rem})</span></td>`;
         }
       });
@@ -721,8 +797,8 @@ function renderTable() {
   });
 
   html += `</tbody><tfoot><tr><td class="label">SUMA</td>`;
-  players.forEach((pid, i) => {
-    html += `<td>${totalScore(state.scores[i])}</td>`;
+  players.forEach(pid => {
+    html += `<td>${totalScore(state.scores[pid])}</td>`;
   });
   html += `</tr></tfoot></table>`;
 
@@ -745,12 +821,20 @@ function render() {
   updateTurnBanner();
   updateRollBtn();
   renderTable();
+  const inGame = state.phase === 'playing' || state.phase === 'over';
   updateRestartBtn(0);
 }
 
-rollBtn.addEventListener('click', () => { if (!rollBtn.disabled) socket.emit('roll'); });
-document.getElementById('home-btn').addEventListener('click', () => { window.location.href = '/'; });
+// ── Akcje ──────────────────────────────────────────────────────────────────────
+rollBtn.addEventListener('click', () => {
+  if (!rollBtn.disabled) socket.emit('roll');
+});
 
+document.getElementById('home-btn').addEventListener('click', () => {
+  window.location.href = '/';
+});
+
+// Restart — przycisk na ekranie (mobilny) + klawiatura R (desktop)
 restartBtn.addEventListener('click', () => {
   if (myPlayer === 0) return;
   myRestartVote = !myRestartVote;
@@ -764,10 +848,16 @@ document.addEventListener('keydown', e => {
   }
 });
 
-socket.on('restart_votes', ({ count }) => { updateRestartBtn(count); });
+socket.on('restart_votes', ({ count }) => {
+  updateRestartBtn(count);
+});
 
 render();
 
+// ══════════════════════════════════════════════════════════════════════════════
+// USTAWIENIA — tylko wersja telefoniczna (przycisk ukryty na desktopie przez CSS)
+// Wysoki kontrast + większa czcionka, zapisywane w localStorage
+// ══════════════════════════════════════════════════════════════════════════════
 const settingsBtn    = document.getElementById('settings-btn');
 const settingsPanel  = document.getElementById('settings-panel');
 const optContrast    = document.getElementById('opt-contrast');
@@ -778,9 +868,15 @@ function applySetting(key, className, on) {
   localStorage.setItem(key, on ? '1' : '0');
 }
 
-settingsBtn.addEventListener('click', (e) => { e.stopPropagation(); settingsPanel.classList.toggle('open'); });
+settingsBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  settingsPanel.classList.toggle('open');
+});
+
 document.addEventListener('click', (e) => {
-  if (!settingsPanel.contains(e.target) && e.target !== settingsBtn) settingsPanel.classList.remove('open');
+  if (!settingsPanel.contains(e.target) && e.target !== settingsBtn) {
+    settingsPanel.classList.remove('open');
+  }
 });
 
 optContrast.addEventListener('click', () => {
@@ -788,14 +884,22 @@ optContrast.addEventListener('click', () => {
   optContrast.classList.toggle('active', on);
   applySetting('kosci-high-contrast', 'high-contrast', on);
 });
+
 optFontSize.addEventListener('click', () => {
   const on = !optFontSize.classList.contains('active');
   optFontSize.classList.toggle('active', on);
   applySetting('kosci-large-font', 'large-font', on);
 });
 
-if (localStorage.getItem('kosci-high-contrast') === '1') { document.body.classList.add('high-contrast'); optContrast.classList.add('active'); }
-if (localStorage.getItem('kosci-large-font') === '1') { document.body.classList.add('large-font'); optFontSize.classList.add('active'); }
+// Przywróć zapisane ustawienia
+if (localStorage.getItem('kosci-high-contrast') === '1') {
+  document.body.classList.add('high-contrast');
+  optContrast.classList.add('active');
+}
+if (localStorage.getItem('kosci-large-font') === '1') {
+  document.body.classList.add('large-font');
+  optFontSize.classList.add('active');
+}
 </script>
 </body>
 </html>

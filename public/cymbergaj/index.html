@@ -97,6 +97,8 @@ const W=900,H=560,PUCK_R=14,MALLET_R=28,GOAL_W=130;
 const GOAL_TOP=(H-GOAL_W)/2,GOAL_BOT=(H+GOAL_W)/2;
 const M1_DARK='rgb(39,122,159)',M2_DARK='rgb(119,41,40)';
 
+// Muszą być identyczne jak stałe fizyki na serwerze (server.js) — używane do
+// lokalnej predykcji pozycji własnego odbijaka (patrz niżej: `predicted`).
 const MAX_MALLET_V = 18;
 const P1_MAX_X = W/2 - MALLET_R - 5;
 const P2_MIN_X = W/2 + MALLET_R + 5;
@@ -149,16 +151,29 @@ function resize(){
 resize();
 window.addEventListener('resize',resize);
 screen.orientation?.addEventListener('change',()=>setTimeout(resize,150));
+screen.orientation?.addEventListener('change',()=>setTimeout(resize,150));
 
 let myPlayer=0;
 let state={puck:{x:W/2,y:H/2,vx:0,vy:0},m1:{x:88,y:H/2},m2:{x:W-88,y:H/2},score:{p1:0,p2:0}};
 
+// ── Lokalna predykcja pozycji WŁASNEGO odbijaka ─────────────────────────────
+// Problem, który to rozwiązuje: przy sterowaniu dotykiem liczyliśmy dx jako
+// "dystans od miejsca, w którym serwer ostatnio widział mój mallet, do palca"
+// i wysyłaliśmy to co drugą klatkę. Serwer tickuje 60x/s i za każdym razem
+// PONOWNIE stosuje ten sam zapisany input, więc zanim klient zdążył przeliczyć
+// nowy dx, serwer już zdążył doje chać do celu i przejechać dalej (podwójne
+// zastosowanie tego samego przesunięcia) — mallet przelatywał obok palca,
+// a kolejna korekta w drugą stronę też przelatywała obok — stąd krążenie.
+// Rozwiązanie: klient sam symuluje dokładnie tę samą fizykę ruchu (te same
+// stałe: MAX_MALLET_V, granice planszy) i liczy dx względem WŁASNEJ,
+// zawsze aktualnej predykcji — a nie względem spóźnionego stanu z serwera.
+// Autorytatywny stan z serwera tylko koryguje ewentualny dryf (patrz reconcile).
 let predicted={x:MALLET_R+60,y:H/2};
 
 function boundsFor(player){
   return player===1
-    ? {minX:MALLET_R,   maxX:P1_MAX_X,   minY:MALLET_R, maxY:H-MALLET_R}
-    : {minX:P2_MIN_X,   maxX:W-MALLET_R, minY:MALLET_R, maxY:H-MALLET_R};
+    ? {minX:MALLET_R,   maxX:P1_MAX_X,      minY:MALLET_R, maxY:H-MALLET_R}
+    : {minX:P2_MIN_X,   maxX:W-MALLET_R,    minY:MALLET_R, maxY:H-MALLET_R};
 }
 
 function resetPredicted(){
@@ -167,13 +182,29 @@ function resetPredicted(){
 }
 
 function reconcile(serverPos){
+  // WAŻNE: korygujemy TYLKO przy naprawdę dużym rozjeździe (np. zerwane i
+  // wznowione połączenie) — i to wywołanie (patrz niżej) odpala się TYLKO gdy
+  // palec nie jest aktualnie przyłożony do ekranu. Poprzednia wersja miała
+  // mały próg (6px) i poprawiała pozycję przy KAŻDYM pakiecie 'state' — ale
+  // stan z serwera na prawdziwym telefonie (realne opóźnienie sieci, którego
+  // nie widać przy testach w tej samej maszynie/emulatorze) jest zawsze nieco
+  // spóźniony względem lokalnej predykcji. Efekt: predicted był bezustannie
+  // cofany do starszej, spóźnionej pozycji, przez co następna klatka liczyła
+  // duży skok do przodu — i tak w kółko. To właśnie powodowało krążenie w
+  // miejscu i drganie lewo-prawo przy ruchu. Duży próg + korekta tylko w
+  // spoczynku eliminuje ten efekt, zachowując ochronę przed realnym dryfem.
   const err=Math.hypot(serverPos.x-predicted.x, serverPos.y-predicted.y);
   if(err>40){ predicted.x=serverPos.x; predicted.y=serverPos.y; }
 }
 
 let mouseX=0,mouseY=0,prevX=0,prevY=0;
 let pointerLocked=false,lockDx=0,lockDy=0;
-let touchTarget=null;
+
+// ── TOUCH: absolutna pozycja celu ────────────────────────────────────────────
+// Zamiast delta palca (która wzmacnia ruch), pamiętamy dokładną pozycję palca
+// w układzie gry. Co klatkę: dx = palec.x − (lokalnie przewidywana pozycja malleta).
+// Gdy mallet dobiega do celu, delta maleje do 0 — brak dryfu, proporcjonalna prędkość.
+let touchTarget=null; // {x,y} w przestrzeni gry lub null gdy palec uniesiony
 let activeTouchId=null;
 
 function pointerToGame(clientX,clientY){
@@ -189,6 +220,7 @@ function pointerToGame(clientX,clientY){
   return {x:W/2+dx*(W/cssW), y:H/2+dy*(H/cssH)};
 }
 
+// Czy punkt gry jest na planszy (z marginesem malleta)
 function onBoard(gx,gy){
   return gx>=MALLET_R && gx<=W-MALLET_R && gy>=MALLET_R && gy<=H-MALLET_R;
 }
@@ -207,12 +239,14 @@ canvas.addEventListener('touchmove',e=>{
   const t=[...e.changedTouches].find(c=>c.identifier===activeTouchId);
   if(!t) return;
   const p=pointerToGame(t.clientX,t.clientY);
+  // Gdy palec wychodzi poza planszę — zatrzymaj mallet (nie ścigaj się poza boiskiem)
   touchTarget=onBoard(p.x,p.y)?{x:p.x,y:p.y}:null;
 },{passive:false});
 
 canvas.addEventListener('touchend',e=>{
   if([...e.changedTouches].find(c=>c.identifier===activeTouchId)){
-    activeTouchId=null; touchTarget=null;
+    activeTouchId=null;
+    touchTarget=null; // palec uniesiony — mallet stoi
   }
 },{passive:false});
 
@@ -231,8 +265,10 @@ document.addEventListener('pointerlockchange',()=>{
 lockBtn.addEventListener('click',()=>{ if(myPlayer===0) return; pointerLocked?document.exitPointerLock():canvas.requestPointerLock(); });
 
 let myRestartVote=false;
-let lastRestartCount=0;
 
+// Przycisk na ekranie (telefon) — z jasnych przyczyn nie da się tam wcisnąć R.
+// Zrobione tak jak w kościach: pokazuje się tylko graczom, licznik głosów X/2,
+// podświetla się gdy zagłosowaliśmy.
 function updateRestartBtn(count){
   if(myPlayer===0){ restartBtn.style.display='none'; return; }
   restartBtn.style.display='inline-flex';
@@ -247,87 +283,60 @@ function toggleRestartVote(){
   updateRestartBtn(lastRestartCount);
 }
 
+let lastRestartCount=0;
+
 restartBtn.addEventListener('click', toggleRestartVote);
+
 document.addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();
   if(k==='l'&&myPlayer!==0){ pointerLocked?document.exitPointerLock():canvas.requestPointerLock(); }
   if(k==='r'&&myPlayer!==0){ toggleRestartVote(); }
 });
 
-// ── SOCKET — namespace /cymbergaj + token sesji dla rejoin ──────────────────
-const SESSION_KEY = 'cymbergaj_token';
-const socket = io('/cymbergaj', {
-  transports: ['websocket'],
-  auth: { token: sessionStorage.getItem(SESSION_KEY) },
-});
-
-socket.on('connect', () => { overlayMsg.textContent = 'Połączono. Czekanie na drugiego gracza…'; });
-
-socket.on('assigned', ({ player, token }) => {
-  if (token) sessionStorage.setItem(SESSION_KEY, token);
-  myPlayer = player;
-  rotationDeg = (player === 2) ? 90 : -90;
+const socket=io({transports:['websocket']});
+socket.on('connect',()=>{ overlayMsg.textContent='Połączono. Czekanie na drugiego gracza…'; });
+socket.on('assigned',({player})=>{
+  myPlayer=player;
+  rotationDeg=(player===2)?90:-90;
   resize();
   resetPredicted();
   updateRestartBtn(0);
-  if (player === 1) { overlayMsg.textContent = 'Jesteś Graczem 1 (niebieski). Czekanie na przeciwnika…'; statusEl.textContent = 'Sterowanie: mysz/dotyk'; }
-  else if (player === 2) { overlayMsg.textContent = 'Jesteś Graczem 2 (czerwony). Czekanie na przeciwnika…'; statusEl.textContent = 'Sterowanie: mysz/dotyk'; }
-  else { overlayMsg.textContent = 'Oglądasz jako widz.'; statusEl.textContent = 'Tryb widza'; }
+  if(player===1){ overlayMsg.textContent='Jesteś Graczem 1 (niebieski). Czekanie na przeciwnika…'; statusEl.textContent='Sterowanie: mysz/dotyk'; }
+  else if(player===2){ overlayMsg.textContent='Jesteś Graczem 2 (czerwony). Czekanie na przeciwnika…'; statusEl.textContent='Sterowanie: mysz/dotyk'; }
+  else { overlayMsg.textContent='Oglądasz jako widz.'; statusEl.textContent='Tryb widza'; }
 });
-
-socket.on('lobby', ({ players, spectators }) => {
-  if (players < 2) overlayMsg.textContent = `Gracze: ${players}/2 — czekanie…`;
-  if (spectators > 0 && players >= 2) statusEl.textContent = (myPlayer !== 0 ? 'Sterowanie: mysz/dotyk' : 'Tryb widza') + `  |  Widzowie: ${spectators}`;
+socket.on('lobby',({players,spectators})=>{
+  if(players<2) overlayMsg.textContent=`Gracze: ${players}/2 — czekanie…`;
+  if(spectators>0&&players>=2) statusEl.textContent=(myPlayer!==0?'Sterowanie: mysz/dotyk':'Tryb widza')+`  |  Widzowie: ${spectators}`;
 });
-
-socket.on('start', ({ score }) => {
-  state.score = score; s1El.textContent = score.p1; s2El.textContent = score.p2;
+socket.on('start',({score})=>{
+  state.score=score; s1El.textContent=score.p1; s2El.textContent=score.p2;
   overlay.classList.add('hidden');
   resetPredicted();
-  if (myPlayer !== 0) updateRestartBtn(0);
+  if(myPlayer!==0) updateRestartBtn(0);
 });
-
-socket.on('state', (snap) => {
-  state = snap;
-  if (touchTarget === null) {
-    if (myPlayer === 1) reconcile(snap.m1);
-    else if (myPlayer === 2) reconcile(snap.m2);
+socket.on('state',(snap)=>{
+  state=snap;
+  // Reconcile tylko gdy nie trzymamy właśnie palca na ekranie — patrz komentarz w reconcile().
+  if(touchTarget===null){
+    if(myPlayer===1) reconcile(snap.m1);
+    else if(myPlayer===2) reconcile(snap.m2);
   }
-  if (s1El.textContent != snap.score.p1) s1El.textContent = snap.score.p1;
-  if (s2El.textContent != snap.score.p2) s2El.textContent = snap.score.p2;
-  // Jeśli wracamy po rejoin i gra trwa — ukryj overlay
-  if (snap.phase === 'playing') overlay.classList.add('hidden');
+  if(s1El.textContent!=snap.score.p1) s1El.textContent=snap.score.p1;
+  if(s2El.textContent!=snap.score.p2) s2El.textContent=snap.score.p2;
 });
-
-socket.on('goal', ({ who, score }) => {
-  state.score = score; s1El.textContent = score.p1; s2El.textContent = score.p2;
-  goalMsgEl.style.color = who === 'p1' ? '#4fc3f7' : '#ef5350';
-  goalMsgEl.textContent = `⚡ GOL! Gracz ${who === 'p1' ? 1 : 2} ⚡`;
-  goalMsgEl.style.opacity = '1';
-  setTimeout(() => { goalMsgEl.style.opacity = '0'; }, 1800);
+socket.on('goal',({who,score})=>{
+  state.score=score; s1El.textContent=score.p1; s2El.textContent=score.p2;
+  goalMsgEl.style.color=who==='p1'?'#4fc3f7':'#ef5350';
+  goalMsgEl.textContent=`⚡ GOL! Gracz ${who==='p1'?1:2} ⚡`;
+  goalMsgEl.style.opacity='1';
+  setTimeout(()=>{ goalMsgEl.style.opacity='0'; },1800);
 });
-
-socket.on('resume', () => { resetPredicted(); });
-
-// Gracz chwilowo wyszedł — grace period 60s, gra zapauzowana
-socket.on('player_away', ({ player }) => {
-  overlay.classList.remove('hidden');
-  overlayMsg.textContent = `Gracz ${player} chwilowo wyszedł. Czekanie na powrót… (60s)`;
-});
-
-// Gracz definitywnie wyszedł (po 60s grace period)
-socket.on('player_left', ({ player }) => {
-  overlay.classList.remove('hidden');
-  overlayMsg.textContent = `Gracz ${player} opuścił grę. Czekanie na nowego gracza…`;
-});
-
-socket.on('disconnect', () => {
-  overlay.classList.remove('hidden');
-  overlayMsg.textContent = 'Rozłączono z serwerem. Odśwież stronę.';
-});
-
-socket.on('restart_votes', ({ count }) => { lastRestartCount = count; updateRestartBtn(count); });
-socket.on('restart', () => { myRestartVote = false; resetPredicted(); updateRestartBtn(0); });
+socket.on('resume',()=>{ resetPredicted(); });
+socket.on('player_left',({player})=>{ overlay.classList.remove('hidden'); overlayMsg.textContent=`Gracz ${player} wyszedł. Czekanie na nowego gracza…`; });
+socket.on('disconnect',()=>{ overlay.classList.remove('hidden'); overlayMsg.textContent='Rozłączono z serwerem. Odśwież stronę.'; });
+socket.on('restart_votes',({count})=>{ lastRestartCount=count; updateRestartBtn(count); });
+socket.on('restart',()=>{ myRestartVote=false; resetPredicted(); updateRestartBtn(0); });
 
 function drawMallet(mx,my,color,darkColor,glowColor,isMe){
   const g=ctx.createRadialGradient(mx,my,0,mx,my,MALLET_R*2.5);
@@ -373,7 +382,16 @@ function loop(){
     if(touchTarget!==null){
       dx=touchTarget.x-predicted.x;
       dy=touchTarget.y-predicted.y;
+      // Martwa strefa: wyślij jawne zero żeby serwer zatrzymał mallet.
+      // Samo pominięcie wysyłki nie działa — serwer ciągle aplikuje ostatni input.
+      // Próg trochę większy niż 1px — prawdziwy ekran dotykowy ma naturalny
+      // szum odczytu rzędu 1-2px, którego nie zobaczysz w emulatorze devtools.
       if(Math.abs(dx)<2&&Math.abs(dy)<2){ dx=0; dy=0; }
+
+      // Przesuń naszą lokalną predykcję DOKŁADNIE tak, jak zrobi to serwer
+      // (ten sam clamp prędkości i te same granice planszy). Dzięki temu
+      // kolejny dx liczymy względem miejsca, w którym mallet NAPRAWDĘ będzie,
+      // a nie względem spóźnionego stanu z serwera — to eliminuje krążenie.
       const len=Math.hypot(dx,dy);
       let cdx=dx, cdy=dy;
       if(len>MAX_MALLET_V){ cdx=dx/len*MAX_MALLET_V; cdy=dy/len*MAX_MALLET_V; }
@@ -387,6 +405,8 @@ function loop(){
       prevX=mouseX; prevY=mouseY;
     }
 
+    // Zawsze wysyłaj — nawet zeros. Serwer stosuje ostatni input co tick,
+    // więc bez jawnego {dx:0,dy:0} mallet dryfuje po zatrzymaniu myszy/palca.
     socket.emit('input',{dx,dy});
   }
 
@@ -398,7 +418,7 @@ function loop(){
 }
 loop();
 
-document.getElementById('home-btn').addEventListener('click', () => { window.location.href = '/'; });
+document.getElementById('home-btn').addEventListener('click',()=>{ window.location.href='/'; });
 </script>
 </body>
 </html>

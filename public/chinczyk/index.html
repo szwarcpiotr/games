@@ -102,14 +102,15 @@ canvas#board{display:block;touch-action:manipulation;cursor:pointer;}
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
+// ══════════════════════════════════════════════════════════
+// KOLORY
+// ══════════════════════════════════════════════════════════
 const COLORS = ['red','blue','yellow','green'];
-// UWAGA: ruch po trasie jest malejący (pos - steps), dlatego pola startowe
-// są przesunięte o -2 względem "naturalnych" indeksów (identycznie jak w server.js)
 const COLOR_CFG = {
-  red:    {startField:38, homeOffset:40, label:'Czerwony'},
-  blue:   {startField:8,  homeOffset:44, label:'Niebieski'},
-  yellow: {startField:18, homeOffset:48, label:'Żółty'},
-  green:  {startField:28, homeOffset:52, label:'Zielony'},
+  red:    {startField:0,  homeOffset:40, label:'Czerwony'},
+  blue:   {startField:10, homeOffset:44, label:'Niebieski'},
+  yellow: {startField:20, homeOffset:48, label:'Żółty'},
+  green:  {startField:30, homeOffset:52, label:'Zielony'},
 };
 const NEON = {
   red:    {main:'#ff4040',glow:'rgba(255,64,64,0.6)',   light:'#ff9090',dark:'#990000'},
@@ -124,23 +125,38 @@ const CLASSIC_PAL = {
   green:  {main:'#2e7d32',glow:'rgba(46,125,50,0.5)',  light:'#a5d6a7',dark:'#005005'},
 };
 
+// ══════════════════════════════════════════════════════════
+// TRASA — 40 pól, symetryczny krzyż (taka sama jak w server.js)
+// siatka 11×11, [col, row], indeks 0..10
+// ══════════════════════════════════════════════════════════
 const TRACK = (function(){
   const T=[];
-  for(let r=10;r>=6;r--) T.push([6,r]);
-  for(let c=7;c<=10;c++) T.push([c,6]);
-  T.push([10,5]);
-  for(let c=10;c>=6;c--) T.push([c,4]);
-  for(let r=3;r>=0;r--) T.push([6,r]);
-  T.push([5,0]);
-  for(let r=0;r<=4;r++) T.push([4,r]);
-  for(let c=3;c>=0;c--) T.push([c,4]);
-  T.push([0,5]);
-  for(let c=0;c<=4;c++) T.push([c,6]);
-  for(let r=7;r<=10;r++) T.push([4,r]);
-  T.push([5,10]);
+  // RED (0..9)
+  for(let r=10;r>=6;r--) T.push([6,r]);   // 0..4:  (6,10)..(6,6)
+  for(let c=7;c<=10;c++) T.push([c,6]);   // 5..8:  (7,6)..(10,6)
+  T.push([10,5]);                          // 9
+  // BLUE (10..19)
+  for(let c=10;c>=6;c--) T.push([c,4]);   // 10..14:(10,4)..(6,4)
+  for(let r=3;r>=0;r--) T.push([6,r]);    // 15..18:(6,3)..(6,0)
+  T.push([5,0]);                           // 19
+  // YELLOW (20..29)
+  for(let r=0;r<=4;r++) T.push([4,r]);    // 20..24:(4,0)..(4,4)
+  for(let c=3;c>=0;c--) T.push([c,4]);    // 25..28:(3,4)..(0,4)
+  T.push([0,5]);                           // 29
+  // GREEN (30..39)
+  for(let c=0;c<=4;c++) T.push([c,6]);    // 30..34:(0,6)..(4,6)
+  for(let r=7;r<=10;r++) T.push([4,r]);   // 35..38:(4,7)..(4,10)
+  T.push([5,10]);                          // 39
   return T;
 })();
 
+// ══════════════════════════════════════════════════════════
+// DOMY (ścieżki do centrum), slot 0=wejście, slot 3=centrum
+// RED wchodzi z (5,10) (pole 39) → dom col=5 w górę
+// BLUE wchodzi z (10,5) (pole 9)  → dom row=5 w lewo
+// YELLOW wchodzi z (5,0) (pole 19)→ dom col=5 w dół
+// GREEN wchodzi z (0,5) (pole 29) → dom row=5 w prawo
+// ══════════════════════════════════════════════════════════
 const HOME_COORDS = {
   red:    [[5,9],[5,8],[5,7],[5,6]],
   blue:   [[9,5],[8,5],[7,5],[6,5]],
@@ -148,6 +164,9 @@ const HOME_COORDS = {
   green:  [[1,5],[2,5],[3,5],[4,5]],
 };
 
+// ══════════════════════════════════════════════════════════
+// BAZY (rogi planszy, 2×2)
+// ══════════════════════════════════════════════════════════
 const BASE_COORDS = {
   red:    [[8,8],[9,8],[8,9],[9,9]],
   blue:   [[8,1],[9,1],[8,2],[9,2]],
@@ -155,6 +174,9 @@ const BASE_COORDS = {
   green:  [[1,8],[2,8],[1,9],[2,9]],
 };
 
+// ══════════════════════════════════════════════════════════
+// DOM
+// ══════════════════════════════════════════════════════════
 const overlay    = document.getElementById('overlay');
 const overlayMsg = document.getElementById('overlay-msg');
 const startBtn   = document.getElementById('start-btn');
@@ -169,11 +191,17 @@ const statusEl   = document.getElementById('status');
 const gameOverBox= document.getElementById('game-over-box');
 const restartBtn = document.getElementById('restart-btn');
 
+// ══════════════════════════════════════════════════════════
+// STAN
+// ══════════════════════════════════════════════════════════
 let myColor=null, myIsPlayer=false, myRestartVote=false, classicMode=false;
 let pendingTurnEnd=false;
 let state={phase:'waiting',players:[],pieces:{},turnIndex:0,dice:null,movablePieces:[],mustRollAgain:false,winner:null};
 let CELL=40;
 
+// ══════════════════════════════════════════════════════════
+// GEOMETRIA
+// ══════════════════════════════════════════════════════════
 function computeGeometry(){
   const wrap=document.getElementById('board-wrap');
   const avail=Math.min(wrap.clientWidth-12, wrap.clientHeight-4, 540);
@@ -209,7 +237,11 @@ function piecePx(piece){
   return null;
 }
 
+// ══════════════════════════════════════════════════════════
+// RYSOWANIE
+// ══════════════════════════════════════════════════════════
 function pal(){return classicMode?CLASSIC_PAL:NEON;}
+
 function rr(x,y,w,h,r){ctx.beginPath();ctx.roundRect(x,y,w,h,r);}
 
 function drawCell(col,row,fillStyle,strokeStyle,lw){
@@ -224,21 +256,29 @@ function drawBoard(){
   const p=pal();
 
   if(classicMode){
+    // Tło całej planszy
     ctx.fillStyle='#f2ede3'; ctx.fillRect(0,0,S,S);
+    // Krzyż planszy
     ctx.fillStyle='#ddd5c4';
     ctx.fillRect(4*CELL,0,3*CELL,S);
     ctx.fillRect(0,4*CELL,S,3*CELL);
   } else {
     ctx.fillStyle='#0a0a0f'; ctx.fillRect(0,0,S,S);
+    // Subtelny krzyż
     ctx.fillStyle='rgba(255,255,255,0.02)';
     ctx.fillRect(4*CELL,0,3*CELL,S);
     ctx.fillRect(0,4*CELL,S,3*CELL);
   }
 
-  const START_IDX = {38:'red',8:'blue',18:'yellow',28:'green'};
+  // Pola trasy
+  const START_IDX = {0:'red',10:'blue',20:'yellow',30:'green'};
   TRACK.forEach(([c,r],idx)=>{
-    if(classicMode){ drawCell(c,r,'#fffef8','#c4b89a',0.8); }
-    else { drawCell(c,r,'rgba(255,255,255,0.06)',null); }
+    if(classicMode){
+      drawCell(c,r,'#fffef8','#c4b89a',0.8);
+    } else {
+      drawCell(c,r,'rgba(255,255,255,0.06)',null);
+    }
+    // Pole startowe każdego koloru — podświetlone ale BEZ obwódki (obwódka jest na bazie)
     const sc=START_IDX[idx];
     if(sc){
       if(classicMode) drawCell(c,r,p[sc].main+'44',p[sc].main,2);
@@ -246,6 +286,7 @@ function drawBoard(){
     }
   });
 
+  // Ścieżki domowe
   for(const color of COLORS){
     HOME_COORDS[color].forEach(([c,r],i)=>{
       if(classicMode){
@@ -258,16 +299,20 @@ function drawBoard(){
     });
   }
 
+  // Bazy (rogi) — obwódka + kółka wewnątrz, styl identyczny dla każdego koloru
   for(const color of COLORS){
     const[c0,r0]=BASE_COORDS[color][0];
     const bx=c0*CELL, by=r0*CELL;
+    // Tło bazy
     if(classicMode){
       ctx.fillStyle=p[color].main+'33'; rr(bx,by,CELL*2,CELL*2,8); ctx.fill();
     } else {
       ctx.fillStyle=p[color].glow.replace(/[\d.]+\)$/,'0.1)'); rr(bx,by,CELL*2,CELL*2,8); ctx.fill();
     }
+    // Obwódka bazy
     ctx.strokeStyle=p[color].main; ctx.lineWidth=classicMode?2:1.5;
     rr(bx,by,CELL*2,CELL*2,8); ctx.stroke();
+    // Kółka w bazie (puste — pionki rysowane osobno)
     for(const[c,r] of BASE_COORDS[color]){
       ctx.beginPath(); ctx.arc(cx(c),cy(r),CELL*0.28,0,Math.PI*2);
       ctx.strokeStyle=p[color].main+(classicMode?'88':'55');
@@ -275,12 +320,19 @@ function drawBoard(){
     }
   }
 
+  // Centrum — 4 trójkąty wskazujące kierunek domu każdego koloru
+  // RED   dom: od dołu → centrum    → trójkąt W DÓŁ   (PI)
+  // BLUE  dom: od prawej → centrum  → trójkąt W PRAWO (PI/2)
+  // YELLOW dom: od góry → centrum   → trójkąt W GÓRĘ  (0)
+  // GREEN dom: od lewej → centrum   → trójkąt W LEWO  (3*PI/2)
   const CA = { red:Math.PI, blue:Math.PI/2, yellow:0, green:3*Math.PI/2 };
   const mx=S/2, my=S/2;
   for(const col of COLORS){
     ctx.save(); ctx.translate(mx,my); ctx.rotate(CA[col]);
     ctx.beginPath();
-    ctx.moveTo(0,-CELL*1.35); ctx.lineTo(-CELL*0.8,0); ctx.lineTo(CELL*0.8,0);
+    ctx.moveTo(0,-CELL*1.35);
+    ctx.lineTo(-CELL*0.8,0);
+    ctx.lineTo(CELL*0.8,0);
     ctx.closePath();
     ctx.fillStyle=classicMode?p[col].main+'99':p[col].glow.replace(/[\d.]+\)$/,'0.5)');
     ctx.fill();
@@ -294,6 +346,8 @@ function drawPieces(){
   if(!state.players.length) return;
   const R=CELL*0.34;
   const p=pal();
+
+  // Grupuj po pozycji pikselowej
   const groups={};
   for(const color of state.players){
     if(!state.pieces[color]) continue;
@@ -305,32 +359,53 @@ function drawPieces(){
       groups[key].push({piece,pos});
     }
   }
+
   for(const group of Object.values(groups)){
     const n=group.length;
     group.forEach(({piece,pos},gi)=>{
+      // Offset gdy kilka pionków na tym samym polu
       let ox=0,oy=0;
       if(n===2){const s=R*0.65;ox=gi===0?-s:s;}
       else if(n===3){const a=gi*(2*Math.PI/3)-Math.PI/2;ox=Math.cos(a)*R*0.7;oy=Math.sin(a)*R*0.7;}
       else if(n===4){const o=[[-1,-1],[1,-1],[-1,1],[1,1]];ox=o[gi][0]*R*0.6;oy=o[gi][1]*R*0.6;}
+
       const px=pos.x+ox, py=pos.y+oy;
       const pc=p[piece.color];
       const isMovable=state.movablePieces?.some(m=>m.color===piece.color&&m.id===piece.id);
       const isMine=piece.color===myColor;
+
+      // Pulsujący glow dla ruszalnych
       if(isMovable&&isMine){
         const gr=ctx.createRadialGradient(px,py,R*0.3,px,py,R*2.4);
-        gr.addColorStop(0,pc.glow); gr.addColorStop(1,'rgba(0,0,0,0)');
-        ctx.beginPath();ctx.arc(px,py,R*2.4,0,Math.PI*2);ctx.fillStyle=gr;ctx.fill();
+        gr.addColorStop(0,pc.glow);
+        gr.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.beginPath();ctx.arc(px,py,R*2.4,0,Math.PI*2);
+        ctx.fillStyle=gr;ctx.fill();
       }
-      ctx.beginPath();ctx.arc(px+1.5,py+2,R,0,Math.PI*2);ctx.fillStyle='rgba(0,0,0,0.45)';ctx.fill();
+
+      // Cień
+      ctx.beginPath();ctx.arc(px+1.5,py+2,R,0,Math.PI*2);
+      ctx.fillStyle='rgba(0,0,0,0.45)';ctx.fill();
+
+      // Ciało z gradientem
       const grad=ctx.createRadialGradient(px-R*0.35,py-R*0.38,R*0.05,px,py,R);
-      grad.addColorStop(0,pc.light||'#fff');grad.addColorStop(0.4,pc.main);grad.addColorStop(1,pc.dark||'#000');
-      ctx.beginPath();ctx.arc(px,py,R,0,Math.PI*2);ctx.fillStyle=grad;ctx.fill();
+      grad.addColorStop(0,pc.light||'#fff');
+      grad.addColorStop(0.4,pc.main);
+      grad.addColorStop(1,pc.dark||'#000');
+      ctx.beginPath();ctx.arc(px,py,R,0,Math.PI*2);
+      ctx.fillStyle=grad;ctx.fill();
+
+      // Obramowanie
       ctx.strokeStyle=(isMovable&&isMine)?'rgba(255,255,255,0.9)':'rgba(0,0,0,0.2)';
-      ctx.lineWidth=(isMovable&&isMine)?2:1;ctx.stroke();
+      ctx.lineWidth=(isMovable&&isMine)?2:1;
+      ctx.stroke();
     });
   }
 }
 
+// ══════════════════════════════════════════════════════════
+// KLIKNIĘCIA
+// ══════════════════════════════════════════════════════════
 function handleClick(clientX,clientY){
   if(!myIsPlayer||state.phase!=='playing') return;
   if(state.players[state.turnIndex]!==myColor) return;
@@ -355,11 +430,17 @@ function handleClick(clientX,clientY){
 boardCanvas.addEventListener('click',e=>handleClick(e.clientX,e.clientY));
 boardCanvas.addEventListener('touchend',e=>{e.preventDefault();const t=e.changedTouches[0];handleClick(t.clientX,t.clientY);},{passive:false});
 
+// ══════════════════════════════════════════════════════════
+// KOSTKA SVG
+// ══════════════════════════════════════════════════════════
 const PIPS={1:[[50,50]],2:[[28,28],[72,72]],3:[[28,28],[50,50],[72,72]],4:[[28,28],[28,72],[72,28],[72,72]],5:[[28,28],[28,72],[50,50],[72,28],[72,72]],6:[[28,25],[28,50],[28,75],[72,25],[72,50],[72,75]]};
 function renderDice(n){if(!n){diceSvg.innerHTML='';return;}diceSvg.innerHTML=PIPS[n].map(([x,y])=>`<circle class="pip" cx="${x}" cy="${y}" r="9"/>`).join('');}
 
+// ══════════════════════════════════════════════════════════
+// UI
+// ══════════════════════════════════════════════════════════
 function isMyTurn(){return state.phase==='playing'&&myIsPlayer&&state.players[state.turnIndex]===myColor;}
-function render(){computeGeometry();drawBoard();updateBanner();updateRollBtn();renderDice(state.dice);}
+function render(){computeGeometry();drawBoard();updateBanner();updateRollBtn();renderDice(state.dice);updateRestartBtn(0);}
 function updateBanner(){
   if(state.phase==='waiting'){turnBanner.textContent='';turnBanner.className='';return;}
   if(state.phase==='over'){turnBanner.textContent='Koniec gry';turnBanner.className='';return;}
@@ -387,111 +468,59 @@ function updateRestartBtn(count){
 }
 
 // ══════════════════════════════════════════════════════════
-// SOCKET — token sesji umożliwia powrót na ten sam kolor
-// po zmianie karty lub chwilowej utracie połączenia
+// SOCKET
 // ══════════════════════════════════════════════════════════
-const SESSION_KEY = 'chinczyk_token';
-const socket = io('/chinczyk', {
-  transports: ['websocket', 'polling'],
-  auth: { token: sessionStorage.getItem(SESSION_KEY) },
-});
-
-socket.on('connect', () => { overlayMsg.textContent = 'Połączono. Czekanie na graczy…'; });
-
-socket.on('assigned', ({ color, isPlayer, token }) => {
-  if (token) sessionStorage.setItem(SESSION_KEY, token);
-  myColor = color; myIsPlayer = isPlayer;
-  if (isPlayer) {
-    overlayMsg.textContent = 'Jesteś ' + COLOR_CFG[color].label + '. Czekanie na start…';
-    statusEl.textContent = COLOR_CFG[color].label;
-  } else {
-    overlayMsg.textContent = 'Oglądasz jako widz.';
-    statusEl.textContent = 'widz';
-  }
+const socket=io('/chinczyk',{transports:['websocket','polling']});
+socket.on('connect',()=>{overlayMsg.textContent='Połączono. Czekanie na graczy…';});
+socket.on('assigned',({color,isPlayer})=>{
+  myColor=color;myIsPlayer=isPlayer;
+  if(isPlayer){overlayMsg.textContent='Jesteś '+COLOR_CFG[color].label+'. Czekanie na start…';statusEl.textContent=COLOR_CFG[color].label;}
+  else{overlayMsg.textContent='Oglądasz jako widz.';statusEl.textContent='widz';}
   render();
 });
-
-socket.on('lobby', ({ players }) => {
-  if (state.phase === 'waiting') {
-    overlayMsg.textContent = 'Gracze: ' + players + '/4 (min. 2)';
-    startBtn.disabled = !(players >= 2 && myIsPlayer);
-  }
+socket.on('lobby',({players})=>{
+  if(state.phase==='waiting'){overlayMsg.textContent='Gracze: '+players+'/4 (min. 2)';startBtn.disabled=!(players>=2&&myIsPlayer);}
 });
-
-startBtn.addEventListener('click', () => socket.emit('start_game'));
-
-socket.on('state', snap => {
-  state = snap;
-  if (state.dice !== null || !isMyTurn()) pendingTurnEnd = false;
-  if (state.phase === 'playing' || state.phase === 'over') overlay.classList.add('hidden');
+startBtn.addEventListener('click',()=>socket.emit('start_game'));
+socket.on('state',snap=>{
+  state=snap;
+  if(state.dice!==null||!isMyTurn()) pendingTurnEnd=false;
+  if(state.phase==='playing'||state.phase==='over') overlay.classList.add('hidden');
   render();
-  if (snap.dice) { diceDisp.classList.add('rolling'); setTimeout(() => diceDisp.classList.remove('rolling'), 350); }
+  if(snap.dice){diceDisp.classList.add('rolling');setTimeout(()=>diceDisp.classList.remove('rolling'),350);}
 });
+socket.on('game_over',({winner})=>{
+  state.phase='over';render();
+  gameOverBox.style.display='block';
+  gameOverBox.innerHTML='🏆 Wygrywa <span style="color:'+pal()[winner]?.main+'">'+COLOR_CFG[winner]?.label+'</span>!';
+});
+socket.on('restart',snap=>{state=snap;myRestartVote=false;gameOverBox.style.display='none';overlay.classList.add('hidden');updateRestartBtn(0);render();});
+socket.on('restart_votes',({count})=>updateRestartBtn(count));
+socket.on('player_left',({color})=>{overlay.classList.remove('hidden');overlayMsg.textContent=(COLOR_CFG[color]?.label||color)+' wyszedł. Czekanie…';startBtn.disabled=true;});
+socket.on('disconnect',()=>{overlay.classList.remove('hidden');overlayMsg.textContent='Rozłączono. Odśwież stronę.';});
+rollBtn.addEventListener('click',()=>{if(!rollBtn.disabled)socket.emit('roll');});
+restartBtn.addEventListener('click',()=>{if(!myIsPlayer)return;myRestartVote=!myRestartVote;socket.emit('restart_vote',{vote:myRestartVote});});
+document.addEventListener('keydown',e=>{if(e.key.toLowerCase()==='r'&&myIsPlayer){myRestartVote=!myRestartVote;socket.emit('restart_vote',{vote:myRestartVote});}});
+document.getElementById('home-btn').addEventListener('click',()=>{window.location.href='/';});
+window.addEventListener('resize',()=>{computeGeometry();drawBoard();});
 
-socket.on('game_over', ({ winner }) => {
-  state.phase = 'over'; render();
-  gameOverBox.style.display = 'block';
-  gameOverBox.innerHTML = '🏆 Wygrywa <span style="color:' + pal()[winner]?.main + '">' + COLOR_CFG[winner]?.label + '</span>!';
+// ══════════════════════════════════════════════════════════
+// USTAWIENIA
+// ══════════════════════════════════════════════════════════
+const settingsBtn=document.getElementById('settings-btn');
+const settingsPanel=document.getElementById('settings-panel');
+const optClassic=document.getElementById('opt-classic');
+settingsBtn.addEventListener('click',e=>{e.stopPropagation();settingsPanel.classList.toggle('open');});
+document.addEventListener('click',e=>{if(!settingsPanel.contains(e.target)&&e.target!==settingsBtn)settingsPanel.classList.remove('open');});
+optClassic.addEventListener('click',()=>{
+  const on=!optClassic.classList.contains('active');
+  optClassic.classList.toggle('active',on);
+  localStorage.setItem('chinczyk-classic',on?'1':'0');
+  classicMode=on;drawBoard();
 });
+if(localStorage.getItem('chinczyk-classic')==='1'){classicMode=true;optClassic.classList.add('active');}
 
-socket.on('restart', snap => {
-  state = snap; myRestartVote = false;
-  gameOverBox.style.display = 'none';
-  overlay.classList.add('hidden');
-  updateRestartBtn(0); render();
-});
-
-socket.on('restart_votes', ({ count }) => updateRestartBtn(count));
-
-// Gracz chwilowo wyszedł — grace period 60s, gra zapauzowana
-socket.on('player_away', ({ color }) => {
-  overlay.classList.remove('hidden');
-  overlayMsg.textContent = (COLOR_CFG[color]?.label || color) + ' chwilowo wyszedł. Czekanie na powrót… (60s)';
-  startBtn.disabled = true;
-});
-
-// Gracz definitywnie wyszedł (po 60s grace period)
-socket.on('player_left', ({ color }) => {
-  overlay.classList.remove('hidden');
-  overlayMsg.textContent = (COLOR_CFG[color]?.label || color) + ' opuścił grę. Czekanie na nowego gracza…';
-  startBtn.disabled = true;
-});
-
-socket.on('disconnect', () => {
-  overlay.classList.remove('hidden');
-  overlayMsg.textContent = 'Rozłączono. Odśwież stronę.';
-});
-
-rollBtn.addEventListener('click', () => { if (!rollBtn.disabled) socket.emit('roll'); });
-restartBtn.addEventListener('click', () => {
-  if (!myIsPlayer) return;
-  myRestartVote = !myRestartVote;
-  socket.emit('restart_vote', { vote: myRestartVote });
-});
-document.addEventListener('keydown', e => {
-  if (e.key.toLowerCase() === 'r' && myIsPlayer) {
-    myRestartVote = !myRestartVote;
-    socket.emit('restart_vote', { vote: myRestartVote });
-  }
-});
-document.getElementById('home-btn').addEventListener('click', () => { window.location.href = '/'; });
-window.addEventListener('resize', () => { computeGeometry(); drawBoard(); });
-
-const settingsBtn   = document.getElementById('settings-btn');
-const settingsPanel = document.getElementById('settings-panel');
-const optClassic    = document.getElementById('opt-classic');
-settingsBtn.addEventListener('click', e => { e.stopPropagation(); settingsPanel.classList.toggle('open'); });
-document.addEventListener('click', e => {
-  if (!settingsPanel.contains(e.target) && e.target !== settingsBtn) settingsPanel.classList.remove('open');
-});
-optClassic.addEventListener('click', () => {
-  const on = !optClassic.classList.contains('active');
-  optClassic.classList.toggle('active', on);
-  localStorage.setItem('chinczyk-classic', on ? '1' : '0');
-  classicMode = on; drawBoard();
-});
-if (localStorage.getItem('chinczyk-classic') === '1') { classicMode = true; optClassic.classList.add('active'); }
-
+// Start
 computeGeometry();
 drawBoard();
 </script>
