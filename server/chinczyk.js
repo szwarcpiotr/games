@@ -1,91 +1,72 @@
 'use strict';
 
-// ═══════════════════════════════════════════════════════════
-// TRASA — identyczna jak w kliencie (40 pól)
-// ═══════════════════════════════════════════════════════════
-// Trasa 40 pól — symetryczny krzyż. Każda ćwiartka to obrót
-// tej samej lokalnej ścieżki o 90°, biegnie o 1 pole od środka
-// w każdym ramieniu, omija bazy w rogach.
 const TRACK = (function(){
   const T=[];
-  // RED (0..9)
-  for(let r=10;r>=6;r--) T.push([6,r]);   // 0..4:  (6,10)..(6,6)
-  for(let c=7;c<=10;c++) T.push([c,6]);   // 5..8:  (7,6)..(10,6)
-  T.push([10,5]);                          // 9
-  // BLUE (10..19)
-  for(let c=10;c>=6;c--) T.push([c,4]);   // 10..14:(10,4)..(6,4)
-  for(let r=3;r>=0;r--) T.push([6,r]);    // 15..18:(6,3)..(6,0)
-  T.push([5,0]);                           // 19
-  // YELLOW (20..29)
-  for(let r=0;r<=4;r++) T.push([4,r]);    // 20..24:(4,0)..(4,4)
-  for(let c=3;c>=0;c--) T.push([c,4]);    // 25..28:(3,4)..(0,4)
-  T.push([0,5]);                           // 29
-  // GREEN (30..39)
-  for(let c=0;c<=4;c++) T.push([c,6]);    // 30..34:(0,6)..(4,6)
-  for(let r=7;r<=10;r++) T.push([4,r]);   // 35..38:(4,7)..(4,10)
-  T.push([5,10]);                          // 39
+  for(let r=10;r>=6;r--) T.push([6,r]);
+  for(let c=7;c<=10;c++) T.push([c,6]);
+  T.push([10,5]);
+  for(let c=10;c>=6;c--) T.push([c,4]);
+  for(let r=3;r>=0;r--) T.push([6,r]);
+  T.push([5,0]);
+  for(let r=0;r<=4;r++) T.push([4,r]);
+  for(let c=3;c>=0;c--) T.push([c,4]);
+  T.push([0,5]);
+  for(let c=0;c<=4;c++) T.push([c,6]);
+  for(let r=7;r<=10;r++) T.push([4,r]);
+  T.push([5,10]);
   return T;
 })();
 
 const COLORS = ['red','blue','yellow','green'];
 
+// UWAGA: ruch po trasie jest malejący (pos - steps), dlatego pola startowe
+// są przesunięte o -2 względem "naturalnych" indeksów — dzięki temu pole
+// wjazdu do domu (tuż przed powrotem na start) nadal wypada we właściwym,
+// geometrycznie poprawnym miejscu przy własnym domu danego koloru.
 const COLOR_CFG = {
-  red:    { startField: 0,  homeOffset: 40 },
-  blue:   { startField: 10, homeOffset: 44 },
-  yellow: { startField: 20, homeOffset: 48 },
-  green:  { startField: 30, homeOffset: 52 },
+  red:    { startField: 38, homeOffset: 40 },
+  blue:   { startField: 8,  homeOffset: 44 },
+  yellow: { startField: 18, homeOffset: 48 },
+  green:  { startField: 28, homeOffset: 52 },
 };
 
-// Pola bezpieczne na wspólnej trasie (pola startowe każdego koloru)
-const SAFE_FIELDS = new Set([0, 10, 20, 30]);
+const SAFE_FIELDS = new Set([38, 8, 18, 28]);
 
-// ═══════════════════════════════════════════════════════════
-// LOGIKA RUCHU
-// ═══════════════════════════════════════════════════════════
+// Czas (ms) przez który trzymamy slot gracza po rozłączeniu.
+// W tym oknie gracz może wrócić na ten sam kolor.
+const GRACE_MS = 60_000;
 
-// Oblicza nową pozycję pionka po `steps` krokach.
-// pos: -1=baza, 0..39=trasa, homeOffset..homeOffset+3=dom, 56=meta
 function calcMove(color, pos, steps) {
   const cfg = COLOR_CFG[color];
   const homeStart = cfg.homeOffset;
 
-  // Z bazy wychodzi tylko na 6
   if (pos === -1) {
     if (steps !== 6) return { newPos: -1, valid: false };
     return { newPos: cfg.startField, valid: true };
   }
 
-  // Już w domu
   if (pos >= homeStart && pos < homeStart + 4) {
     const slot    = pos - homeStart;
     const newSlot = slot + steps;
-    if (newSlot === 4) return { newPos: 56, valid: true }; // meta!
+    if (newSlot === 4) return { newPos: 56, valid: true };
     if (newSlot > 4)   return { newPos: pos, valid: false };
     return { newPos: homeStart + newSlot, valid: true };
   }
 
-// Na wspólnej trasie:
-  // "postęp" gracza = ile kroków zrobił od swojego pola startowego
-  // (kierunek odwrócony — pos maleje zamiast rosnąć = ruch w prawo)
-  const progress = (cfg.startField - pos + 40) % 40;
-  // Ile kroków do wejścia do domu (po przejechaniu całej trasy)
+  const progress    = (cfg.startField - pos + 40) % 40;
   const stepsToHome = 40 - progress;
 
   if (steps < stepsToHome) {
-    // Zostaje na trasie
     return { newPos: (pos - steps + 40) % 40, valid: true };
   } else if (steps === stepsToHome) {
-    // Wchodzi na slot 0 domu
     return { newPos: homeStart, valid: true };
   } else {
-    // Wchodzi głębiej do domu
     const slot = steps - stepsToHome - 1;
     if (slot > 3) return { newPos: pos, valid: false };
     return { newPos: homeStart + slot, valid: true };
   }
 }
 
-// Zbiera wszystkie możliwe ruchy aktywnego gracza
 function getMovable(game) {
   const color = game.players[game.turnIndex];
   const dice  = game.dice;
@@ -94,20 +75,15 @@ function getMovable(game) {
   const movable = [];
   for (const piece of game.pieces[color]) {
     if (piece.pos === 56) continue;
-
     const { newPos, valid } = calcMove(color, piece.pos, dice);
     if (!valid) continue;
-
-    // Zablokowany przez własnego pionka?
     const blocked = game.pieces[color].some(p => p.id !== piece.id && p.pos === newPos);
     if (blocked) continue;
-
     movable.push({ color, id: piece.id, newPos });
   }
   return movable;
 }
 
-// Wykonuje ruch pionka
 function applyMove(game, color, pieceId) {
   const piece = game.pieces[color].find(p => p.id === pieceId);
   if (!piece) return;
@@ -115,19 +91,15 @@ function applyMove(game, color, pieceId) {
   const { newPos } = calcMove(color, piece.pos, game.dice);
   piece.pos = newPos;
 
-  // Bicie — tylko na wspólnej trasie, nie na polach bezpiecznych
   if (newPos >= 0 && newPos < 40 && !SAFE_FIELDS.has(newPos)) {
     for (const otherColor of game.players) {
       if (otherColor === color) continue;
       for (const op of game.pieces[otherColor]) {
-        if (op.pos === newPos) {
-          op.pos = -1; // cofnij na bazę
-        }
+        if (op.pos === newPos) op.pos = -1;
       }
     }
   }
 
-  // Sprawdź wygraną: wszystkie 4 pionki w domu (na ostatnim slocie) lub w mecie
   const cfg = COLOR_CFG[color];
   const h   = cfg.homeOffset;
   const won = game.pieces[color].every(p => p.pos === 56 || p.pos === h + 3);
@@ -137,7 +109,6 @@ function applyMove(game, color, pieceId) {
   }
 }
 
-// Przejdź do tury następnego gracza (pomijaj tych co skończyli)
 function nextTurn(game) {
   game.dice          = null;
   game.movablePieces = [];
@@ -161,12 +132,18 @@ function nextTurn(game) {
 module.exports = function registerChinczyk(io) {
   const ns = io.of('/chinczyk');
 
-  let playerMap    = {};  // color → socketId
-  let sockets      = new Map(); // socketId → { socket, color, isPlayer }
+  // color → { socketId, token, gracePending: bool }
+  let playerSlots  = {};
+  // token → color (dla rejonów)
+  let tokenMap     = {};
+  // socketId → { socket, color, isPlayer }
+  let sockets      = new Map();
   let lobbyPlayers = 0;
   let spectators   = 0;
   let game         = null;
   let restartVotes = new Set();
+  // color → timeoutId (grace period)
+  let graceTimers  = {};
 
   function broadcast(ev, data) { ns.emit(ev, data); }
 
@@ -205,32 +182,95 @@ module.exports = function registerChinczyk(io) {
   }
 
   function firstFreeColor() {
-    return COLORS.find(c => !playerMap[c]) || null;
+    return COLORS.find(c => !playerSlots[c]) || null;
+  }
+
+  function countActivePlayers() {
+    return COLORS.filter(c => playerSlots[c]?.socketId).length;
+  }
+
+  // Wyczyść sloty gracza — używane PO upływie grace period (nie natychmiast)
+  function releaseSlot(color) {
+    const slot = playerSlots[color];
+    if (!slot) return;
+    if (slot.token) delete tokenMap[slot.token];
+    delete playerSlots[color];
+    delete graceTimers[color];
+    lobbyPlayers--;
+
+    if (game) {
+      game.players = game.players.filter(c => c !== color);
+      delete game.pieces[color];
+
+      if (game.phase === 'playing') {
+        if (game.players.length < 2) {
+          game.phase = 'waiting';
+        } else {
+          game.turnIndex = game.turnIndex % game.players.length;
+          game.dice          = null;
+          game.movablePieces = [];
+        }
+      }
+    }
+
+    broadcast('player_left', { color });
+    broadcast('lobby', { players: lobbyPlayers, spectators });
   }
 
   ns.on('connection', socket => {
-    const color    = firstFreeColor();
-    const isPlayer = !!color;
+    // Klient może wysłać token z sessionStorage przy połączeniu
+    const clientToken = socket.handshake.auth?.token || null;
 
-    if (isPlayer) {
-      playerMap[color] = socket.id;
-      lobbyPlayers++;
-    } else {
-      spectators++;
+    let color    = null;
+    let isPlayer = false;
+
+    // Spróbuj rejoin po tokenie
+    if (clientToken && tokenMap[clientToken]) {
+      const prevColor = tokenMap[clientToken];
+      const slot      = playerSlots[prevColor];
+
+      if (slot && slot.token === clientToken) {
+        // Anuluj grace period — gracz wrócił
+        if (graceTimers[prevColor]) {
+          clearTimeout(graceTimers[prevColor]);
+          delete graceTimers[prevColor];
+        }
+        color    = prevColor;
+        isPlayer = true;
+        slot.socketId = socket.id;
+        slot.gracePending = false;
+      }
     }
+
+    // Nowy gracz
+    if (!color) {
+      const freeColor = firstFreeColor();
+      if (freeColor) {
+        color    = freeColor;
+        isPlayer = true;
+        const token = Math.random().toString(36).slice(2) + Date.now().toString(36);
+        playerSlots[color] = { socketId: socket.id, token, gracePending: false };
+        tokenMap[token]    = color;
+        lobbyPlayers++;
+      }
+    }
+
+    if (!isPlayer) spectators++;
+
     sockets.set(socket.id, { color, isPlayer });
 
-    socket.emit('assigned', { color, isPlayer });
+    // Wyślij token klientowi (tylko nowym graczom; rejoinujący już mają)
+    const myToken = isPlayer ? playerSlots[color]?.token : null;
+    socket.emit('assigned', { color, isPlayer, token: myToken });
     broadcast('lobby', { players: lobbyPlayers, spectators });
 
-    // Wyślij aktualny stan jeśli gra trwa
     if (game) socket.emit('state', snapshot());
 
     // ── Start ──────────────────────────────────────────────
     socket.on('start_game', () => {
       if (!isPlayer || lobbyPlayers < 2) return;
       if (game && game.phase === 'playing') return;
-      const active = COLORS.filter(c => playerMap[c]);
+      const active = COLORS.filter(c => playerSlots[c]?.socketId);
       game = makeGame(active);
       restartVotes.clear();
       broadcastState();
@@ -240,7 +280,6 @@ module.exports = function registerChinczyk(io) {
     socket.on('roll', () => {
       if (!game || game.phase !== 'playing') return;
       if (!isPlayer || game.players[game.turnIndex] !== color) return;
-      // Można rzucać tylko gdy: dice===null (nowa tura lub po wykonaniu ruchu za 6)
       if (game.dice !== null) return;
 
       const roll = Math.ceil(Math.random() * 6);
@@ -248,7 +287,7 @@ module.exports = function registerChinczyk(io) {
 
       if (roll === 6) {
         game.sixStreak++;
-        game.mustRollAgain = true; // po ruchu gracz dostanie kolejny rzut
+        game.mustRollAgain = true;
       } else {
         game.sixStreak     = 0;
         game.mustRollAgain = false;
@@ -256,10 +295,8 @@ module.exports = function registerChinczyk(io) {
 
       game.movablePieces = getMovable(game);
 
-      // Brak ruchów po rzucie
       if (game.movablePieces.length === 0) {
         if (game.mustRollAgain) {
-          // Dostał 6 ale nie ma żadnego możliwego ruchu — rzuca ponownie
           game.dice          = null;
           game.mustRollAgain = false;
           broadcastState();
@@ -291,13 +328,10 @@ module.exports = function registerChinczyk(io) {
         return;
       }
 
-      // Po ruchu zawsze zeruj dice i movable.
-      // Jeśli był 6 — gracz musi rzucić ponownie (dice=null, tura się nie zmienia)
       game.dice          = null;
       game.movablePieces = [];
 
       if (hadSix) {
-        // Gracz rzuca ponownie — tura się nie zmienia, dice jest null gotowe na rzut
         game.mustRollAgain = false;
         broadcastState();
       } else {
@@ -313,8 +347,9 @@ module.exports = function registerChinczyk(io) {
       vote ? restartVotes.add(socket.id) : restartVotes.delete(socket.id);
       broadcast('restart_votes', { count: restartVotes.size });
 
-      if (restartVotes.size >= lobbyPlayers && lobbyPlayers >= 2) {
-        const active = COLORS.filter(c => playerMap[c]);
+      const activePlayers = countActivePlayers();
+      if (restartVotes.size >= activePlayers && activePlayers >= 2) {
+        const active = COLORS.filter(c => playerSlots[c]?.socketId);
         game = makeGame(active);
         restartVotes.clear();
         broadcast('restart', snapshot());
@@ -327,30 +362,26 @@ module.exports = function registerChinczyk(io) {
       if (!info) return;
       sockets.delete(socket.id);
 
-      if (info.isPlayer) {
-        delete playerMap[info.color];
-        lobbyPlayers--;
+      if (info.isPlayer && info.color) {
         restartVotes.delete(socket.id);
+        const slot = playerSlots[info.color];
 
-        if (game) {
-          game.players = game.players.filter(c => c !== info.color);
-          delete game.pieces[info.color];
+        if (slot) {
+          // Oznacz slot jako "grace" — jeszcze go nie zwalniamy
+          slot.socketId     = null;
+          slot.gracePending = true;
 
-          if (game.phase === 'playing') {
-            if (game.players.length < 2) {
-              game.phase = 'waiting';
-            } else {
-              game.turnIndex = game.turnIndex % game.players.length;
-              game.dice          = null;
-              game.movablePieces = [];
-            }
-          }
+          // Poinformuj innych że gracz chwilowo wyszedł
+          broadcast('player_away', { color: info.color });
+
+          // Po GRACE_MS — jeśli nie wrócił, zwolnij slot na dobre
+          graceTimers[info.color] = setTimeout(() => {
+            releaseSlot(info.color);
+          }, GRACE_MS);
         }
-
-        broadcast('player_left', { color: info.color });
-        broadcast('lobby', { players: lobbyPlayers, spectators });
-      } else {
+      } else if (!info.isPlayer) {
         spectators--;
+        broadcast('lobby', { players: lobbyPlayers, spectators });
       }
     });
   });
